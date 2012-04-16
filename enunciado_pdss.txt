@@ -1,0 +1,88 @@
+Práctica final PDSS
+
+Servicio de chat
+__________________
+
+
+El objetivo es hacer un sistema de chat distribuido. En este sistema,
+cada uno de los nodos debe tener un fichero con los identificadores,
+IP y puertos necesarios del resto de los nodos. El fichero de nodos
+tendrá este aspecto:
+
+id1 IP1 udp_port_1 tcp_port_1
+id2 IP2 udp_port_2 tcp_port_2
+id3 IP3 udp_port_3 tcp_port_3
+id4 IP4 udp_port_4 tcp_port_4
+...
+idN IPN udp_port_N tcp_port_N
+
+Cada nodo estará implementado mediante un único programa que tendrá
+las siguientes condiciones:
+
+1) Se ejecutará especificando el fichero anteriormente descrito y su
+   id
+
+	$ ./minodo ficheronodos.txt id2
+
+2) Se quedará esperando por su entrada estándar a que se escriba un
+   comando mostrando los caracteres " >". Cada vez que tenga que
+   informar sobre el estado de un nodo se pondrá
+
+	[id_nodo] mensaje
+
+3) Almacenará internamente el estado de los nodos. Para esto, mandará
+   cada 5 segundos un mensaje a cada uno de los nodos con la cadena
+   "ping". Cada nodo que lo reciba contestará con un mensaje "pong".
+   Cada nodo activo establecerá una conexión TCP por cada uno del
+   resto de los nodos activo. Esta conexión desaparecerá si el nodo
+   deja de estar activo.
+
+Recomendaciones de diseño: Para mandar el mensaje usaremos un
+manejador de la señal de reloj configurada a 5 segundos. Podremos
+tener un thread que esté escuchando en el puerto UDP y conteste cada
+vez que le llegue un mensaje.
+
+4) Si se pulsa Ctrl-D o Ctrl-C, el nodo manda a todos los nodos
+activos el mensaje "leave" por UDP para indicar que deja de estar
+activo. El programa termina.
+
+5) Comandos aceptados:
+
+	5.1) status
+		 Muestra el estado de los nodos. Ejemplo:
+
+			> status
+			[nodo1] está activo
+			[nodo2] está activo
+			[nodo3] no está activo
+	5.2) leave
+		Manda a todos los nodos activos el mensaje "leave" por
+		UDP para indicar que deja de estar activo. El programa
+		termina.
+
+	5.3) msg idtarget textoaenviar
+		Manda por TCP el texto "textoaenviar" al nodo con
+		identificador "idtarget". Si el nodo "idtarget" no
+		está activo se informará con el mensaje:
+
+		[idtarget] no está activo
+
+	     Si un nodo recibe un mensaje del nodo idsrc lo visualizará:
+
+		[idsrc] textoaenviar
+
+		Si "idtarget" es "-b", se lo enviará a todos los nodos
+		activos.
+
+	5.4) exec idtarget binarioaejecutar
+
+	     Enviará al nodo "idtarget" por TCP una petición para que
+	     ejecute en segundo plano "binarioaejecutar", y mostrará:
+
+		[idsrc] pide ejecutar binarioaejecutar
+
+	     Si "binarioaejecutar" no existe no se ejecuta nada.
+
+	     Si el nodo "id" no está activo se informará con el mensaje:
+
+		[idtarget] no está activo
