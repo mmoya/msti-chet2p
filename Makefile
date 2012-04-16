@@ -10,6 +10,6 @@ chet2p: main.o
 
 clean:
 	rm -f *.o
-	rm -f chatserver
+	rm -f chet2p
 
 .PHONY: clean
