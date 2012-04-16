@@ -1,0 +1,13 @@
+chet2p - Simple chat application using a p2p approach
+
+Final assignment on Software Development Practices
+Master STI, URJC
+http://gsyc.es/master
+
+Authors:
+    Maykel Moya <mmoya@mmoya.org
+
+Only for demonstrative purposes, security and error management are
+weak. Not intended for real usage.
+
+Project requirements (in spanish) are in enunciado_pdss.txt file.
