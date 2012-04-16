@@ -1,9 +1,9 @@
 CC = gcc
 CFLAGS = -Wall
-LDFLAGS =
+LDFLAGS = -lncurses
 
 chet2p: main.o
-	$(CC) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $^

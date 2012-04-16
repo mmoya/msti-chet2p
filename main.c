@@ -18,9 +18,30 @@
  */
 
 #include <stdlib.h>
+#include <ncurses.h>
 
 int
 main(int argc, char *argv[])
 {
+	int rows, cols;
+	WINDOW *chat_window, *input_window;
+
+	initscr();
+	getmaxyx(stdscr, rows, cols);
+	refresh();
+
+	chat_window = newwin(rows - 2, cols, 0, 0);
+	box(chat_window, 0, 0);
+	wrefresh(chat_window);
+
+	input_window = newwin(3, cols, rows - 3, 0);
+	wborder(input_window, ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
+			      ACS_LTEE, ACS_RTEE, ACS_LLCORNER, ACS_LRCORNER);
+	mvwprintw(input_window, 1, 1, "> ");
+	wrefresh(input_window);
+
+	getch();
+
+	endwin();
 	exit(EXIT_SUCCESS);
 }
