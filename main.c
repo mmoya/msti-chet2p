@@ -25,12 +25,16 @@ main(int argc, char *argv[])
 {
 	int rows, cols;
 	WINDOW *chat_window, *input_window;
+	int chat_height, chat_width;
 
 	initscr();
 	getmaxyx(stdscr, rows, cols);
 	refresh();
 
-	chat_window = newwin(rows - 2, cols, 0, 0);
+	chat_height = rows - 2;
+	chat_width = cols;
+
+	chat_window = newwin(chat_height, chat_width, 0, 0);
 	box(chat_window, 0, 0);
 	wrefresh(chat_window);
 
