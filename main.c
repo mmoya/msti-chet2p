@@ -36,6 +36,9 @@ main(int argc, char *argv[])
 
 	chat_window = newwin(chat_height, chat_width, 0, 0);
 	box(chat_window, 0, 0);
+	idlok(chat_window, TRUE);
+	scrollok(chat_window, TRUE);
+	wsetscrreg(chat_window, 1, chat_height - 1);
 	wrefresh(chat_window);
 
 	input_window = newwin(3, cols, rows - 3, 0);
