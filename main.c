@@ -17,10 +17,78 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <arpa/inet.h>
+#include <errno.h>
+#include <netinet/in.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+
+#include <glib.h>
 #include <ncurses.h>
 
 #define INPUTLEN 80
+
+typedef struct {
+	char *id;
+	struct in_addr addr;
+	uint16_t udp_port;
+	uint16_t tcp_port;
+	int alive;
+} peer_info_t;
+
+GHashTable *peers;
+
+GHashTable *
+load_peers(char *filename)
+{
+	FILE *peersfile;
+	GHashTable *peers;
+
+	char *buffer = NULL;
+	size_t bufsize = 0;
+	ssize_t read;
+	char *tokens[4];
+	int i;
+
+	char *id;
+	peer_info_t *peer_info;
+
+	peers = g_hash_table_new(g_str_hash, g_str_equal);
+
+	peersfile = fopen(filename, "r");
+	if (peersfile == NULL) {
+		fprintf(stderr, "Error opening %s.\n", filename);
+		exit(EXIT_FAILURE);
+	}
+
+	while ((read = getline(&buffer, &bufsize, peersfile)) != -1) {
+		if (buffer[read - 1] == '\n')
+			buffer[read - 1] = '\0';
+
+		for (i=0; i<4; i++)
+			tokens[i] = strtok(i == 0 ? buffer : NULL, " ");
+
+		peer_info = (peer_info_t *)malloc(sizeof(peer_info_t));
+		id = (char *)malloc(strlen(tokens[0]) + 1);
+		strcpy(id, tokens[0]);
+		peer_info->id = (char *)malloc(strlen(tokens[0]) + 1);
+		strcpy(id, tokens[0]);
+		inet_aton(tokens[1], &peer_info->addr);
+		peer_info->udp_port = htons(atoi(tokens[2]));
+		peer_info->tcp_port = htons(atoi(tokens[3]));
+		peer_info->alive = FALSE;
+
+		g_hash_table_insert(peers, id, peer_info);
+
+		if (buffer) {
+			free(buffer);
+			buffer = NULL;
+		}
+	}
+
+	return peers;
+}
 
 int
 main(int argc, char *argv[])
@@ -30,6 +98,29 @@ main(int argc, char *argv[])
 	int should_finish = FALSE;
 	WINDOW *chat_window, *input_window;
 	int chat_height, chat_width;
+
+	char *peersfile;
+	struct stat st;
+	int rc;
+
+	if (argc < 2) {
+		fprintf(stderr, "Wrong number of arguments.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	peersfile = argv[1];
+	rc = stat(peersfile, &st);
+	if (rc == -1) {
+		if (errno == ENOENT) {
+			fprintf(stderr, "Can't open %s.\n", peersfile);
+			exit(EXIT_FAILURE);
+		}
+		else {
+			fprintf(stderr, "Error stating %s: %d\n", peersfile, errno);
+			exit(EXIT_FAILURE);
+		}
+	}
+	peers = load_peers(peersfile);
 
 	initscr();
 	getmaxyx(stdscr, rows, cols);
