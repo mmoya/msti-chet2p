@@ -29,7 +29,6 @@ main(int argc, char *argv[])
 
 	initscr();
 	getmaxyx(stdscr, rows, cols);
-	refresh();
 
 	chat_height = rows - 2;
 	chat_width = cols;
