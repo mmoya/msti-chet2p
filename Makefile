@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall $(shell pkg-config --cflags glib-2.0)
+CFLAGS = -Wall -ggdb $(shell pkg-config --cflags glib-2.0)
 LDFLAGS = -lncurses $(shell pkg-config --libs glib-2.0)
 
 chet2p: main.o
