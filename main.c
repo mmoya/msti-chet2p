@@ -20,10 +20,14 @@
 #include <stdlib.h>
 #include <ncurses.h>
 
+#define INPUTLEN 80
+
 int
 main(int argc, char *argv[])
 {
 	int rows, cols;
+	char line[INPUTLEN];
+	int should_finish = FALSE;
 	WINDOW *chat_window, *input_window;
 	int chat_height, chat_width;
 
@@ -41,12 +45,21 @@ main(int argc, char *argv[])
 	wrefresh(chat_window);
 
 	input_window = newwin(3, cols, rows - 3, 0);
-	wborder(input_window, ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
-			      ACS_LTEE, ACS_RTEE, ACS_LLCORNER, ACS_LRCORNER);
-	mvwprintw(input_window, 1, 1, "> ");
-	wrefresh(input_window);
 
-	getch();
+	do {
+		werase(input_window);
+		wborder(input_window, ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
+				      ACS_LTEE, ACS_RTEE, ACS_LLCORNER, ACS_LRCORNER);
+		mvwprintw(input_window, 1, 1, "> ");
+		wrefresh(input_window);
+		wgetnstr(input_window, line, INPUTLEN);
+
+		wmove(chat_window, chat_height - 1, 1);
+		waddstr(chat_window, line);
+		waddch(chat_window, '\n');
+		box(chat_window, 0, 0);
+		wrefresh(chat_window);
+	} while (!should_finish);
 
 	endwin();
 	exit(EXIT_SUCCESS);
