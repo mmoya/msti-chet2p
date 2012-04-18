@@ -31,7 +31,7 @@
 
 typedef struct {
 	char *id;
-	struct in_addr addr;
+	in_addr_t in_addr;
 	uint16_t udp_port;
 	uint16_t tcp_port;
 	int alive;
@@ -76,7 +76,7 @@ load_peers(char *filename)
 		strcpy(id, tokens[0]);
 		peer_info->id = (char *)malloc(strlen(tokens[0]) + 1);
 		strcpy(id, tokens[0]);
-		inet_aton(tokens[1], &peer_info->addr);
+		peer_info->in_addr = inet_addr(tokens[1]);
 		peer_info->udp_port = htons(atoi(tokens[2]));
 		peer_info->tcp_port = htons(atoi(tokens[3]));
 		peer_info->alive = FALSE;
