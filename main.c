@@ -39,7 +39,8 @@ typedef struct {
 	int alive;
 } peer_info_t;
 
-GHashTable *peers;
+GHashTable *peers_by_id;
+GHashTable *peers_by_addr;
 char *self_id;
 peer_info_t *self_info;
 
@@ -88,11 +89,10 @@ heartbeat(void *data)
 	return NULL;
 }
 
-GHashTable *
+void
 load_peers(char *filename)
 {
 	FILE *peersfile;
-	GHashTable *peers;
 
 	char *buffer = NULL;
 	size_t bufsize = 0;
@@ -101,9 +101,11 @@ load_peers(char *filename)
 	int i;
 
 	char *id;
+	in_addr_t in_addr;
 	peer_info_t *peer_info;
 
-	peers = g_hash_table_new(g_str_hash, g_str_equal);
+	peers_by_id = g_hash_table_new(g_str_hash, g_str_equal);
+	peers_by_addr = g_hash_table_new(g_direct_hash, g_direct_equal);
 
 	peersfile = fopen(filename, "r");
 	if (peersfile == NULL) {
@@ -123,20 +125,21 @@ load_peers(char *filename)
 		strcpy(id, tokens[0]);
 		peer_info->id = (char *)malloc(strlen(tokens[0]) + 1);
 		strcpy(id, tokens[0]);
-		peer_info->in_addr = inet_addr(tokens[1]);
+		in_addr = inet_addr(tokens[1]);
+		peer_info->in_addr = in_addr;
 		peer_info->udp_port = htons(atoi(tokens[2]));
 		peer_info->tcp_port = htons(atoi(tokens[3]));
 		peer_info->alive = FALSE;
 
-		g_hash_table_insert(peers, id, peer_info);
+		g_hash_table_insert(peers_by_id, id, peer_info);
+		g_hash_table_insert(peers_by_addr,
+			GUINT_TO_POINTER(in_addr), peer_info);
 
 		if (buffer) {
 			free(buffer);
 			buffer = NULL;
 		}
 	}
-
-	return peers;
 }
 
 int
@@ -169,9 +172,9 @@ main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 	}
-	peers = load_peers(peersfile);
+	load_peers(peersfile);
 	self_id = argv[2];
-	self_info = g_hash_table_lookup(peers, self_id);
+	self_info = g_hash_table_lookup(peers_by_id, self_id);
 	if (self_info == NULL) {
 		fprintf(stderr, "Can't find id %s in %s.\n", self_id, peersfile);
 		exit(EXIT_FAILURE);
