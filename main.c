@@ -77,7 +77,9 @@ heartbeat(void *data)
 		if (buffer[read - 1] == '\n')
 			buffer[read - 1] = '\0';
 
-		fprintf(stderr, "Received <%s>\n", buffer);
+		fprintf(stderr, "Received <%s> from %s:%d\n",
+			buffer, inet_ntoa(peeraddr.sin_addr),
+			ntohs(peeraddr.sin_port));
 
 		if (strncmp(buffer, "ping", BUFFSIZE) == 0) {
 			fprintf(stderr, "Sending pong\n");
