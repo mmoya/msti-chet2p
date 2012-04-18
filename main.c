@@ -39,6 +39,10 @@ typedef struct {
 	int alive;
 } peer_info_t;
 
+pthread_mutex_t chatw_mutex;
+WINDOW *chat_window, *input_window;
+int chat_height, chat_width;
+
 GHashTable *peers_by_id;
 GHashTable *peers_by_addr;
 char *self_id;
@@ -49,6 +53,9 @@ FILE *logfile;
 
 pthread_t tid;
 
+void
+chat_writeln(int notice, const char *);
+
 void *
 heartbeat(void *data)
 {
@@ -58,6 +65,7 @@ heartbeat(void *data)
 	socklen_t skaddrl;
 	size_t read;
 	char *pong = "pong\n";
+	char line[BUFFSIZE];
 
 	memset(&srvaddr, 0, sizeof(srvaddr));
 	memset(&peeraddr, 0, sizeof(peeraddr));
@@ -72,9 +80,7 @@ heartbeat(void *data)
 
 	bind(sk, (struct sockaddr *)&srvaddr, sizeof(srvaddr));
 
-	pthread_mutex_lock(&logfile_mutex);
-	fprintf(logfile, "Socket binded\n");
-	pthread_mutex_unlock(&logfile_mutex);
+	chat_writeln(TRUE, "Socket binded");
 
 	while ((read = recvfrom(sk, buffer, BUFFSIZE, 0,
 			(struct sockaddr *)&peeraddr, &skaddrl)) > 0) {
@@ -82,17 +88,13 @@ heartbeat(void *data)
 		if (buffer[read - 1] == '\n')
 			buffer[read - 1] = '\0';
 
-
-		pthread_mutex_lock(&logfile_mutex);
-		fprintf(logfile, "Received <%s> from %s:%d\n",
+		snprintf(line, BUFFSIZE, "Received <%s> from %s:%d",
 			buffer, inet_ntoa(peeraddr.sin_addr),
 			ntohs(peeraddr.sin_port));
-		pthread_mutex_unlock(&logfile_mutex);
+		chat_writeln(TRUE, line);
 
 		if (strncmp(buffer, "ping", BUFFSIZE) == 0) {
-			pthread_mutex_lock(&logfile_mutex);
-			fprintf(logfile, "Sending pong\n");
-			pthread_mutex_unlock(&logfile_mutex);
+			chat_writeln(TRUE, "Sending pong");
 			sendto(sk, pong, 5, 0,
 				(struct sockaddr *)&peeraddr, skaddrl);
 		}
@@ -154,14 +156,34 @@ load_peers(char *filename)
 	}
 }
 
+void
+chat_writeln(int notice, const char *line)
+{
+	pthread_mutex_lock(&chatw_mutex);
+	if (notice) {
+		waddch(chat_window, '[');
+		wattron(chat_window, COLOR_PAIR(1));
+		waddstr(chat_window, "LOG");
+		wattrset(chat_window, A_NORMAL);
+		waddch(chat_window, ']');
+		waddch(chat_window, ' ');
+	}
+	waddstr(chat_window, line);
+	waddch(chat_window, '\n');
+	waddch(chat_window, ' ');
+	wborder(chat_window, ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
+			     ACS_ULCORNER, ACS_URCORNER, ACS_LTEE, ACS_RTEE);
+	wrefresh(chat_window);
+	wrefresh(input_window);
+	pthread_mutex_unlock(&chatw_mutex);
+}
+
 int
 main(int argc, char *argv[])
 {
 	int rows, cols;
 	char line[INPUTLEN];
 	int should_finish = FALSE;
-	WINDOW *chat_window, *input_window;
-	int chat_height, chat_width;
 
 	char *peersfile;
 	struct stat st;
@@ -197,6 +219,11 @@ main(int argc, char *argv[])
 	}
 
 	initscr();
+	start_color();
+
+	init_pair(1, COLOR_MAGENTA, COLOR_BLACK);
+	init_pair(2, COLOR_CYAN, COLOR_BLACK);
+
 	getmaxyx(stdscr, rows, cols);
 
 	chat_height = rows - 2;
@@ -207,7 +234,9 @@ main(int argc, char *argv[])
 	idlok(chat_window, TRUE);
 	scrollok(chat_window, TRUE);
 	wsetscrreg(chat_window, 1, chat_height - 1);
+	wmove(chat_window, chat_height - 1, 1);
 	wrefresh(chat_window);
+	pthread_mutex_init(&chatw_mutex, NULL);
 
 	input_window = newwin(3, cols, rows - 3, 0);
 
@@ -221,11 +250,7 @@ main(int argc, char *argv[])
 		wrefresh(input_window);
 		wgetnstr(input_window, line, INPUTLEN);
 
-		wmove(chat_window, chat_height - 1, 1);
-		waddstr(chat_window, line);
-		waddch(chat_window, '\n');
-		box(chat_window, 0, 0);
-		wrefresh(chat_window);
+		chat_writeln(FALSE, line);
 	} while (!should_finish);
 
 	pthread_join(tid, NULL);
