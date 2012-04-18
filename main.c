@@ -20,6 +20,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -28,6 +29,7 @@
 #include <ncurses.h>
 
 #define INPUTLEN 80
+#define BUFFSIZE 255
 
 typedef struct {
 	char *id;
@@ -40,6 +42,51 @@ typedef struct {
 GHashTable *peers;
 char *self_id;
 peer_info_t *self_info;
+
+pthread_t tid;
+
+void *
+heartbeat(void *data)
+{
+	int sk;
+	struct sockaddr_in srvaddr, peeraddr;
+	char buffer[BUFFSIZE];
+	socklen_t skaddrl;
+	size_t read;
+	char *pong = "pong\n";
+
+	memset(&srvaddr, 0, sizeof(srvaddr));
+	memset(&peeraddr, 0, sizeof(peeraddr));
+
+	sk = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+	srvaddr.sin_family = AF_INET;
+	srvaddr.sin_addr.s_addr = self_info->in_addr;
+	srvaddr.sin_port = self_info->udp_port;
+
+	skaddrl = sizeof(peeraddr);
+
+	bind(sk, (struct sockaddr *)&srvaddr, sizeof(srvaddr));
+
+	fprintf(stderr, "Socket binded\n");
+
+	while ((read = recvfrom(sk, buffer, BUFFSIZE, 0,
+			(struct sockaddr *)&peeraddr, &skaddrl)) > 0) {
+
+		if (buffer[read - 1] == '\n')
+			buffer[read - 1] = '\0';
+
+		fprintf(stderr, "Received <%s>\n", buffer);
+
+		if (strncmp(buffer, "ping", BUFFSIZE) == 0) {
+			fprintf(stderr, "Sending pong\n");
+			sendto(sk, pong, 5, 0,
+				(struct sockaddr *)&peeraddr, skaddrl);
+		}
+	}
+
+	return NULL;
+}
 
 GHashTable *
 load_peers(char *filename)
@@ -145,6 +192,8 @@ main(int argc, char *argv[])
 
 	input_window = newwin(3, cols, rows - 3, 0);
 
+	pthread_create(&tid, NULL, heartbeat, NULL);
+
 	do {
 		werase(input_window);
 		wborder(input_window, ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
@@ -159,6 +208,8 @@ main(int argc, char *argv[])
 		box(chat_window, 0, 0);
 		wrefresh(chat_window);
 	} while (!should_finish);
+
+	pthread_join(tid, NULL);
 
 	endwin();
 	exit(EXIT_SUCCESS);
