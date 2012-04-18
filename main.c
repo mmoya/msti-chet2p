@@ -44,6 +44,8 @@ GHashTable *peers_by_addr;
 char *self_id;
 peer_info_t *self_info;
 
+FILE *logfile;
+
 pthread_t tid;
 
 void *
@@ -69,7 +71,7 @@ heartbeat(void *data)
 
 	bind(sk, (struct sockaddr *)&srvaddr, sizeof(srvaddr));
 
-	fprintf(stderr, "Socket binded\n");
+	fprintf(logfile, "Socket binded\n");
 
 	while ((read = recvfrom(sk, buffer, BUFFSIZE, 0,
 			(struct sockaddr *)&peeraddr, &skaddrl)) > 0) {
@@ -77,12 +79,12 @@ heartbeat(void *data)
 		if (buffer[read - 1] == '\n')
 			buffer[read - 1] = '\0';
 
-		fprintf(stderr, "Received <%s> from %s:%d\n",
+		fprintf(logfile, "Received <%s> from %s:%d\n",
 			buffer, inet_ntoa(peeraddr.sin_addr),
 			ntohs(peeraddr.sin_port));
 
 		if (strncmp(buffer, "ping", BUFFSIZE) == 0) {
-			fprintf(stderr, "Sending pong\n");
+			fprintf(logfile, "Sending pong\n");
 			sendto(sk, pong, 5, 0,
 				(struct sockaddr *)&peeraddr, skaddrl);
 		}
@@ -157,6 +159,9 @@ main(int argc, char *argv[])
 	struct stat st;
 	int rc;
 
+	logfile = fopen("/tmp/chet2p.log", "a");
+	setbuf(logfile, NULL);
+
 	if (argc < 3) {
 		fprintf(stderr, "Usage: %s <peers_file> <self_id>\n", argv[0]);
 		exit(EXIT_FAILURE);
@@ -215,6 +220,8 @@ main(int argc, char *argv[])
 	} while (!should_finish);
 
 	pthread_join(tid, NULL);
+
+	fclose(logfile);
 
 	endwin();
 	exit(EXIT_SUCCESS);
