@@ -38,6 +38,8 @@ typedef struct {
 } peer_info_t;
 
 GHashTable *peers;
+char *self_id;
+peer_info_t *self_info;
 
 GHashTable *
 load_peers(char *filename)
@@ -103,8 +105,8 @@ main(int argc, char *argv[])
 	struct stat st;
 	int rc;
 
-	if (argc < 2) {
-		fprintf(stderr, "Wrong number of arguments.\n");
+	if (argc < 3) {
+		fprintf(stderr, "Usage: %s <peers_file> <self_id>\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 
@@ -121,6 +123,12 @@ main(int argc, char *argv[])
 		}
 	}
 	peers = load_peers(peersfile);
+	self_id = argv[2];
+	self_info = g_hash_table_lookup(peers, self_id);
+	if (self_info == NULL) {
+		fprintf(stderr, "Can't find id %s in %s.\n", self_id, peersfile);
+		exit(EXIT_FAILURE);
+	}
 
 	initscr();
 	getmaxyx(stdscr, rows, cols);
