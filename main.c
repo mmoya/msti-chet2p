@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include <glib.h>
 #include <ncurses.h>
@@ -39,6 +40,11 @@ typedef struct {
 	int sockfd_w;
 	int alive;
 } peer_info_t;
+
+typedef enum {
+	MSGDIR_IN,
+	MSGDIR_OUT
+} msgdir_t;
 
 pthread_mutex_t chatw_mutex;
 WINDOW *chat_window, *input_window;
@@ -247,6 +253,30 @@ chat_writeln(int notice, const char *line)
 }
 
 void
+chat_message(const msgdir_t msgdir, const char *peer_id, const char *message)
+{
+	pthread_mutex_lock(&chatw_mutex);
+	if (msgdir == MSGDIR_OUT) {
+		wattron(chat_window, COLOR_PAIR(3));
+		waddstr(chat_window, "> ");
+	}
+	else {
+		wattron(chat_window, COLOR_PAIR(2));
+	}
+	waddstr(chat_window, peer_id);
+	wattrset(chat_window, A_NORMAL);
+	waddch(chat_window, ' ');
+	waddstr(chat_window, message);
+	waddch(chat_window, '\n');
+	waddch(chat_window, ' ');
+	wborder(chat_window, ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
+			     ACS_ULCORNER, ACS_URCORNER, ACS_LTEE, ACS_RTEE);
+	wrefresh(chat_window);
+	wrefresh(input_window);
+	pthread_mutex_unlock(&chatw_mutex);
+}
+
+void
 cmd_status()
 {
 	GList *peers, *curpeer;
@@ -264,6 +294,38 @@ cmd_status()
 		chat_writeln(FALSE, buff);
 
 		curpeer = curpeer->next;
+	}
+}
+
+void
+cmd_message(const char *line)
+{
+	int argc, sockfd;
+	ssize_t writec;
+	char peer_id[BUFFSIZE], message[BUFFSIZE], buff[BUFFSIZE];
+	peer_info_t *peer_info = NULL;
+
+	argc = sscanf(line, "%s %[^\n]", peer_id, message);
+	if (argc < 2) {
+		chat_writeln(TRUE, "Usage: msg <id> <message>");
+		return;
+	}
+
+	peer_info = g_hash_table_lookup(peers_by_id, peer_id);
+	if (peer_info == NULL) {
+		snprintf(buff, BUFFSIZE, "%s :unknown id", peer_id);
+		chat_writeln(TRUE, buff);
+		return;
+	}
+
+	sockfd = peer_info->sockfd_w;
+	writec = write(sockfd, message, strlen(message));
+	if (writec == strlen(message)) {
+		chat_message(MSGDIR_OUT, &peer_id[0], &message[0]);
+	}
+	else {
+		snprintf(buff, BUFFSIZE, "error sending message: %d bytes sent", (int)writec);
+		chat_writeln(TRUE, buff);
 	}
 }
 
@@ -312,6 +374,7 @@ main(int argc, char *argv[])
 
 	init_pair(1, COLOR_MAGENTA, COLOR_BLACK);
 	init_pair(2, COLOR_CYAN, COLOR_BLACK);
+	init_pair(3, COLOR_GREEN, COLOR_BLACK);
 
 	getmaxyx(stdscr, rows, cols);
 
@@ -348,7 +411,7 @@ main(int argc, char *argv[])
 			chat_writeln(TRUE, "LEAVE");
 		}
 		else if (strstr(line, "msg") == line) {
-			chat_writeln(TRUE, "MSG");
+			cmd_message(line + 3);
 		}
 		else if (strstr(line, "exec") == line) {
 			chat_writeln(TRUE, "EXEC");
