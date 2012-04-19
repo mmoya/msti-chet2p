@@ -32,7 +32,7 @@ def main():
             if fileno in srvsockets.keys():
                 srvsk = srvsockets[fileno]
                 conn, addr = srvsk.accept()
-                print("Accepted connection from {0}".format(addr))
+                print("Accepted connection from {0}:{1}".format(*addr))
                 conn.setblocking(0)
                 epoll.register(conn.fileno(), select.EPOLLIN)
                 conns[conn.fileno()] = (conn, addr)
@@ -41,8 +41,9 @@ def main():
                 _input = conn.recv(1024)
                 # Receive data of length zero ==> connection closed.
                 if len(_input) > 0:
-                    print("Received {0}".format(_input))
+                    print("From {1}:{2}: {0}".format(_input, *addr))
                 else:
+                    print("Closing connection to {0}:{1}".format(*addr))
                     conn.close()
                     conns.pop(fileno)
                     epoll.unregister(fileno)
