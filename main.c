@@ -36,6 +36,7 @@ typedef struct {
 	in_addr_t in_addr;
 	uint16_t udp_port;
 	uint16_t tcp_port;
+	int sockfd_w;
 	int alive;
 } peer_info_t;
 
@@ -51,7 +52,7 @@ peer_info_t *self_info;
 pthread_mutex_t logfile_mutex;
 FILE *logfile;
 
-pthread_t tid;
+pthread_t tid[2];
 
 void
 chat_writeln(int notice, const char *);
@@ -103,6 +104,67 @@ heartbeat(void *data)
 	return NULL;
 }
 
+void *
+peer_connect(void *data)
+{
+	int sockfd;
+	struct sockaddr_in peeraddr;
+	char buffer[BUFFSIZE];
+	peer_info_t *peer_info;
+
+	peer_info = data;
+
+	sockfd = socket(PF_INET, SOCK_STREAM, 0);
+
+	peeraddr.sin_family = AF_INET;
+	peeraddr.sin_addr.s_addr = peer_info->in_addr;
+	peeraddr.sin_port = peer_info->tcp_port;
+
+	if (connect(sockfd, (struct sockaddr *)&peeraddr,
+		sizeof(peeraddr)) == 0) {
+		snprintf(buffer, BUFFSIZE, "Connected to peer %s:%d",
+			inet_ntoa(peeraddr.sin_addr),
+			htons(peeraddr.sin_port));
+		peer_info->sockfd_w = sockfd;
+	}
+	else {
+		snprintf(buffer, BUFFSIZE, "Error connecting to peer %s:%d",
+			inet_ntoa(peeraddr.sin_addr),
+			htons(peeraddr.sin_port));
+	}
+
+	chat_writeln(TRUE, buffer);
+	return NULL;
+}
+
+void *
+peers_connect(void *data)
+{
+	GList *peers, *curpeer;
+	int peers_len, i;
+	pthread_t *tids;
+
+	peers = g_hash_table_get_values(peers_by_id);
+	peers_len = g_list_length(peers);
+	curpeer = peers;
+
+	tids = (pthread_t *)malloc(sizeof(pthread_t) * peers_len);
+	i = 0;
+
+	while (curpeer) {
+		if (curpeer->data != self_info)
+			pthread_create(&tids[i++], NULL, peer_connect, curpeer->data);
+		curpeer = curpeer->next;
+	}
+
+	for (i=0; i<peers_len; i++)
+		pthread_join(tids[i], NULL);
+
+	free(tids);
+
+	return NULL;
+}
+
 void
 load_peers(char *filename)
 {
@@ -143,6 +205,7 @@ load_peers(char *filename)
 		peer_info->in_addr = in_addr;
 		peer_info->udp_port = htons(atoi(tokens[2]));
 		peer_info->tcp_port = htons(atoi(tokens[3]));
+		peer_info->sockfd_w = -1;
 		peer_info->alive = FALSE;
 
 		g_hash_table_insert(peers_by_id, id, peer_info);
@@ -240,7 +303,8 @@ main(int argc, char *argv[])
 
 	input_window = newwin(3, cols, rows - 3, 0);
 
-	pthread_create(&tid, NULL, heartbeat, NULL);
+	pthread_create(&tid[0], NULL, heartbeat, NULL);
+	pthread_create(&tid[1], NULL, peers_connect, NULL);
 
 	do {
 		werase(input_window);
@@ -254,7 +318,8 @@ main(int argc, char *argv[])
 			chat_writeln(FALSE, line);
 	} while (!should_finish);
 
-	pthread_join(tid, NULL);
+	pthread_join(tid[0], NULL);
+	pthread_join(tid[1], NULL);
 
 	fclose(logfile);
 
