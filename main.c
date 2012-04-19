@@ -250,7 +250,8 @@ main(int argc, char *argv[])
 		wrefresh(input_window);
 		wgetnstr(input_window, line, INPUTLEN);
 
-		chat_writeln(FALSE, line);
+		if (strlen(line) > 0)
+			chat_writeln(FALSE, line);
 	} while (!should_finish);
 
 	pthread_join(tid, NULL);
