@@ -35,18 +35,20 @@ def main():
                 print("Accepted connection from {0}".format(addr))
                 conn.setblocking(0)
                 epoll.register(conn.fileno(), select.EPOLLIN)
-                conns[conn.fileno()] = conn
+                conns[conn.fileno()] = (conn, addr)
             elif event & select.EPOLLIN:
-                _input = conns[fileno].recv(1024)
+                conn, addr = conns[fileno]
+                _input = conn.recv(1024)
                 # Receive data of length zero ==> connection closed.
                 if len(_input) > 0:
                     print("Received {0}".format(_input))
                 else:
-                    conns[fileno].close()
+                    conn.close()
                     conns.pop(fileno)
                     epoll.unregister(fileno)
             elif event & select.EPOLLHUP:
-                conns[fileno].close()
+                conn, addr = conns[fileno]
+                conn.close()
                 conns.pop(fileno)
                 epoll.unregister(fileno)
             elif event & select.EPOLLOUT:
