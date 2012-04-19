@@ -272,6 +272,7 @@ main(int argc, char *argv[])
 {
 	int rows, cols;
 	char line[INPUTLEN];
+	char buff[BUFFSIZE];
 	int should_finish = FALSE;
 
 	char *peersfile;
@@ -339,8 +340,23 @@ main(int argc, char *argv[])
 		wrefresh(input_window);
 		wgetnstr(input_window, line, INPUTLEN);
 
-		if (strlen(line) > 0)
-			chat_writeln(FALSE, line);
+		if (strstr(line, "status") == line) {
+			chat_writeln(TRUE, "STATUS");
+			cmd_status();
+		}
+		else if (strstr(line, "leave") == line) {
+			chat_writeln(TRUE, "LEAVE");
+		}
+		else if (strstr(line, "msg") == line) {
+			chat_writeln(TRUE, "MSG");
+		}
+		else if (strstr(line, "exec") == line) {
+			chat_writeln(TRUE, "EXEC");
+		}
+		else {
+			snprintf(buff, BUFFSIZE, "%s :unknown command", line);
+			chat_writeln(TRUE, buff);
+		}
 	} while (!should_finish);
 
 	pthread_join(tid[0], NULL);
