@@ -200,7 +200,7 @@ load_peers(char *filename)
 		id = (char *)malloc(strlen(tokens[0]) + 1);
 		strcpy(id, tokens[0]);
 		peer_info->id = (char *)malloc(strlen(tokens[0]) + 1);
-		strcpy(id, tokens[0]);
+		strcpy(peer_info->id, tokens[0]);
 		in_addr = inet_addr(tokens[1]);
 		peer_info->in_addr = in_addr;
 		peer_info->udp_port = htons(atoi(tokens[2]));
