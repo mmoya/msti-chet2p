@@ -46,7 +46,6 @@ int chat_height, chat_width;
 
 GHashTable *peers_by_id;
 GHashTable *peers_by_addr;
-char *self_id;
 peer_info_t *self_info;
 
 pthread_mutex_t logfile_mutex;
@@ -154,8 +153,7 @@ peers_connect(void *data)
 	i = 0;
 
 	while (curpeer) {
-		if (curpeer->data != self_info)
-			pthread_create(&tids[i++], NULL, peer_connect, curpeer->data);
+		pthread_create(&tids[i++], NULL, peer_connect, curpeer->data);
 		curpeer = curpeer->next;
 	}
 
@@ -168,7 +166,7 @@ peers_connect(void *data)
 }
 
 void
-load_peers(char *filename)
+load_peers(char *filename, const char *self_id)
 {
 	FILE *peersfile;
 
@@ -210,9 +208,14 @@ load_peers(char *filename)
 		peer_info->sockfd_w = -1;
 		peer_info->alive = FALSE;
 
-		g_hash_table_insert(peers_by_id, id, peer_info);
-		g_hash_table_insert(peers_by_addr,
-			GUINT_TO_POINTER(in_addr), peer_info);
+		if (strcmp(peer_info->id, self_id)) {
+			g_hash_table_insert(peers_by_id, id, peer_info);
+			g_hash_table_insert(peers_by_addr,
+				GUINT_TO_POINTER(in_addr), peer_info);
+		}
+		else {
+			self_info = peer_info;
+		}
 
 		if (buffer) {
 			free(buffer);
@@ -275,11 +278,10 @@ main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 	}
-	load_peers(peersfile);
-	self_id = argv[2];
-	self_info = g_hash_table_lookup(peers_by_id, self_id);
+	self_info = NULL;
+	load_peers(peersfile, argv[2]);
 	if (self_info == NULL) {
-		fprintf(stderr, "Can't find id %s in %s.\n", self_id, peersfile);
+		fprintf(stderr, "Can't find id %s in %s.\n", argv[2], peersfile);
 		exit(EXIT_FAILURE);
 	}
 
