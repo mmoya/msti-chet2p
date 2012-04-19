@@ -246,6 +246,27 @@ chat_writeln(int notice, const char *line)
 	pthread_mutex_unlock(&chatw_mutex);
 }
 
+void
+cmd_status()
+{
+	GList *peers, *curpeer;
+	peer_info_t *peer_info;
+	char buff[BUFFSIZE];
+
+	peers = g_hash_table_get_values(peers_by_id);
+	curpeer = peers;
+
+	while (curpeer) {
+		peer_info = curpeer->data;
+
+		snprintf(buff, BUFFSIZE, "[%s] is %salive", peer_info->id,
+			peer_info->alive ? "" : "not ");
+		chat_writeln(FALSE, buff);
+
+		curpeer = curpeer->next;
+	}
+}
+
 int
 main(int argc, char *argv[])
 {
