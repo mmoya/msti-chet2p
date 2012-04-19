@@ -231,6 +231,16 @@ load_peers(char *filename, const char *self_id)
 }
 
 void
+chat_repaint()
+{
+	waddch(chat_window, ' ');
+	wborder(chat_window, ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
+			     ACS_ULCORNER, ACS_URCORNER, ACS_LTEE, ACS_RTEE);
+	wrefresh(chat_window);
+	wrefresh(input_window);
+}
+
+void
 chat_writeln(int notice, const char *line)
 {
 	pthread_mutex_lock(&chatw_mutex);
@@ -244,11 +254,7 @@ chat_writeln(int notice, const char *line)
 	}
 	waddstr(chat_window, line);
 	waddch(chat_window, '\n');
-	waddch(chat_window, ' ');
-	wborder(chat_window, ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
-			     ACS_ULCORNER, ACS_URCORNER, ACS_LTEE, ACS_RTEE);
-	wrefresh(chat_window);
-	wrefresh(input_window);
+	chat_repaint();
 	pthread_mutex_unlock(&chatw_mutex);
 }
 
@@ -268,11 +274,7 @@ chat_message(const msgdir_t msgdir, const char *peer_id, const char *message)
 	waddch(chat_window, ' ');
 	waddstr(chat_window, message);
 	waddch(chat_window, '\n');
-	waddch(chat_window, ' ');
-	wborder(chat_window, ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
-			     ACS_ULCORNER, ACS_URCORNER, ACS_LTEE, ACS_RTEE);
-	wrefresh(chat_window);
-	wrefresh(input_window);
+	chat_repaint();
 	pthread_mutex_unlock(&chatw_mutex);
 }
 
