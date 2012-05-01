@@ -41,6 +41,7 @@ typedef struct {
 	int sockfd_w;
 	int sockfd_udp;
 	int alive;
+	pthread_t poller_tid;
 } peer_info_t;
 
 typedef enum {
@@ -59,8 +60,7 @@ peer_info_t *self_info;
 pthread_mutex_t logfile_mutex;
 FILE *logfile;
 
-pthread_t main_tid[3];
-pthread_t *poller_tid;
+pthread_t main_tid[2];
 
 const static char *ping = "ping\n";
 
@@ -230,29 +230,21 @@ peer_poller(void *data)
 	return NULL;
 }
 
-void *
-peers_poller(void *data)
+void
+create_peers_poller()
 {
 	GList *peers, *curpeer;
-	int npeers, i = 0;
+	peer_info_t *peer_info;
 
 	peers = g_hash_table_get_values(peers_by_id);
-	npeers = g_list_length(peers);
-	poller_tid = (pthread_t *)malloc(sizeof(pthread_t) * npeers);
 
 	curpeer = peers;
 	while (curpeer) {
+		peer_info = curpeer->data;
 		chat_writeln(1, "Creating poller thread...");
-		pthread_create(&poller_tid[i++], NULL, peer_poller, curpeer->data);
+		pthread_create(&peer_info->poller_tid, NULL, peer_poller, peer_info);
 		curpeer = curpeer->next;
 	}
-
-	for (i=0; i<npeers; i++)
-		pthread_join(poller_tid[i], NULL);
-
-	free(poller_tid);
-
-	return NULL;
 }
 
 void
@@ -483,7 +475,8 @@ main(int argc, char *argv[])
 
 	pthread_create(&main_tid[0], NULL, heartbeat, NULL);
 	pthread_create(&main_tid[1], NULL, peers_connect, NULL);
-	pthread_create(&main_tid[2], NULL, peers_poller, NULL);
+
+	create_peers_poller();
 
 	do {
 		werase(input_window);
@@ -514,7 +507,6 @@ main(int argc, char *argv[])
 
 	pthread_join(main_tid[0], NULL);
 	pthread_join(main_tid[1], NULL);
-	pthread_join(main_tid[2], NULL);
 
 	fclose(logfile);
 
