@@ -63,6 +63,7 @@ FILE *logfile;
 pthread_t main_tid[2];
 
 const static char *ping = "ping\n";
+const static char *leave = "leave\n";
 
 void
 chat_writeln(int notice, const char *);
@@ -410,6 +411,34 @@ cmd_message(const char *line)
 	}
 }
 
+void
+cmd_leave()
+{
+	GList *peers, *curpeer;
+	peer_info_t *peer_info;
+	struct sockaddr_in peeraddr;
+
+	peers = g_hash_table_get_values(peers_by_id);
+
+	curpeer = peers;
+	while (curpeer) {
+		peer_info = curpeer->data;
+		pthread_cancel(peer_info->poller_tid);
+		pthread_join(peer_info->poller_tid, NULL);
+
+		peeraddr.sin_family = AF_INET;
+		peeraddr.sin_addr.s_addr = peer_info->in_addr;
+		peeraddr.sin_port = peer_info->udp_port;
+
+		sendto(peer_info->sockfd_udp, leave, strlen(leave), 0,
+			(struct sockaddr *)&peeraddr,
+			 sizeof(struct sockaddr_in));
+		close(peer_info->sockfd_udp);
+
+		curpeer = curpeer->next;
+	}
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -492,6 +521,12 @@ main(int argc, char *argv[])
 		}
 		else if (strstr(line, "leave") == line) {
 			chat_writeln(TRUE, "LEAVE");
+			cmd_leave();
+
+			pthread_cancel(main_tid[0]);
+			pthread_cancel(main_tid[1]);
+
+			should_finish = TRUE;
 		}
 		else if (strstr(line, "msg") == line) {
 			cmd_message(line + 3);
