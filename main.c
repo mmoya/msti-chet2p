@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <glib.h>
@@ -38,6 +39,7 @@ typedef struct {
 	uint16_t udp_port;
 	uint16_t tcp_port;
 	int sockfd_w;
+	int sockfd_udp;
 	int alive;
 } peer_info_t;
 
@@ -57,7 +59,10 @@ peer_info_t *self_info;
 pthread_mutex_t logfile_mutex;
 FILE *logfile;
 
-pthread_t main_tid[2];
+pthread_t main_tid[3];
+pthread_t *poller_tid;
+
+const static char *ping = "ping\n";
 
 void
 chat_writeln(int notice, const char *);
@@ -167,6 +172,85 @@ peers_connect(void *data)
 		pthread_join(tids[i], NULL);
 
 	free(tids);
+
+	return NULL;
+}
+
+void *
+peer_poller(void *data)
+{
+	peer_info_t *peer_info = data;
+
+	struct sockaddr_in peeraddr;
+	socklen_t addrlen;
+	struct timeval tv;
+
+	char buffer[BUFFSIZE];
+	int one, readb, waitsec;
+	time_t sent_at, recv_at;
+
+	tv.tv_sec = 1;
+	one = 1;
+
+	peer_info->sockfd_udp = socket(PF_INET, SOCK_DGRAM, 0);
+	setsockopt(peer_info->sockfd_udp, SOL_SOCKET, SO_RCVTIMEO,
+		(struct timeval *)&tv, sizeof(struct timeval));
+	setsockopt(peer_info->sockfd_udp, SOL_SOCKET, SO_REUSEADDR,
+		&one, sizeof(int));
+
+	peeraddr.sin_family = AF_INET;
+	peeraddr.sin_addr.s_addr = peer_info->in_addr;
+	peeraddr.sin_port = peer_info->udp_port;
+
+	addrlen = sizeof(struct sockaddr_in);
+
+	while (TRUE) {
+		sendto(peer_info->sockfd_udp, ping, strlen(ping), 0,
+			(struct sockaddr *)&peeraddr,
+			 sizeof(struct sockaddr_in));
+		sent_at = time(NULL);
+		readb = recvfrom(peer_info->sockfd_udp, buffer, BUFFSIZE,
+			0, (struct sockaddr *)&peeraddr, &addrlen);
+		recv_at = time(NULL);
+
+		if (readb > 0 && strstr(buffer, "pong") == buffer) {
+			peer_info->alive = TRUE;
+		}
+		else {
+			peer_info->alive = FALSE;
+		}
+
+		waitsec = 5 - (recv_at - sent_at);
+		if (waitsec < 0)
+		    waitsec = 0;
+
+		sleep(waitsec);
+	}
+
+	return NULL;
+}
+
+void *
+peers_poller(void *data)
+{
+	GList *peers, *curpeer;
+	int npeers, i = 0;
+
+	peers = g_hash_table_get_values(peers_by_id);
+	npeers = g_list_length(peers);
+	poller_tid = (pthread_t *)malloc(sizeof(pthread_t) * npeers);
+
+	curpeer = peers;
+	while (curpeer) {
+		chat_writeln(1, "Creating poller thread...");
+		pthread_create(&poller_tid[i++], NULL, peer_poller, curpeer->data);
+		curpeer = curpeer->next;
+	}
+
+	for (i=0; i<npeers; i++)
+		pthread_join(poller_tid[i], NULL);
+
+	free(poller_tid);
 
 	return NULL;
 }
@@ -399,6 +483,7 @@ main(int argc, char *argv[])
 
 	pthread_create(&main_tid[0], NULL, heartbeat, NULL);
 	pthread_create(&main_tid[1], NULL, peers_connect, NULL);
+	pthread_create(&main_tid[2], NULL, peers_poller, NULL);
 
 	do {
 		werase(input_window);
@@ -429,6 +514,7 @@ main(int argc, char *argv[])
 
 	pthread_join(main_tid[0], NULL);
 	pthread_join(main_tid[1], NULL);
+	pthread_join(main_tid[2], NULL);
 
 	fclose(logfile);
 
