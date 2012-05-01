@@ -2,9 +2,12 @@
 
 # http://scotdoyle.com/python-epoll-howto.html
 
+import random
 import select
 import socket
 import sys
+
+PONG_FAILS = 0.3
 
 srvsockets = {}
 udpsockets = {}
@@ -62,8 +65,11 @@ def main():
                 print("From UDP {1}:{2}: {0}".format(_input, *addr))
                 if _input.strip() == b'ping':
                     pong = b'pong\n'
-                    print("Sending {0} to UDP {1}:{2}".format(pong, *addr))
-                    sk.sendto(pong, addr)
+                    if random.random() >= PONG_FAILS:
+                        print("Sending {0} to UDP {1}:{2}".format(pong, *addr))
+                        sk.sendto(pong, addr)
+                    else:
+                        print("Not sending {0} to UDP {1}:{2}".format(pong, *addr))
             elif event & select.EPOLLIN:
                 conn, addr = conns[fileno]
                 _input = conn.recv(1024)
