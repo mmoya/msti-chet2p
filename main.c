@@ -196,6 +196,9 @@ load_peers(char *filename, const char *self_id)
 	}
 
 	while ((read = getline(&buffer, &bufsize, peersfile)) != -1) {
+		if (buffer[0] == '#')
+			continue;
+
 		if (buffer[read - 1] == '\n')
 			buffer[read - 1] = '\0';
 
