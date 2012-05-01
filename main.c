@@ -57,7 +57,7 @@ peer_info_t *self_info;
 pthread_mutex_t logfile_mutex;
 FILE *logfile;
 
-pthread_t tid[2];
+pthread_t main_tid[2];
 
 void
 chat_writeln(int notice, const char *);
@@ -394,8 +394,8 @@ main(int argc, char *argv[])
 
 	input_window = newwin(3, cols, rows - 3, 0);
 
-	pthread_create(&tid[0], NULL, heartbeat, NULL);
-	pthread_create(&tid[1], NULL, peers_connect, NULL);
+	pthread_create(&main_tid[0], NULL, heartbeat, NULL);
+	pthread_create(&main_tid[1], NULL, peers_connect, NULL);
 
 	do {
 		werase(input_window);
@@ -424,8 +424,8 @@ main(int argc, char *argv[])
 		}
 	} while (!should_finish);
 
-	pthread_join(tid[0], NULL);
-	pthread_join(tid[1], NULL);
+	pthread_join(main_tid[0], NULL);
+	pthread_join(main_tid[1], NULL);
 
 	fclose(logfile);
 
