@@ -4,17 +4,26 @@
 
 import select
 import socket
-
-peers = (
-    ('192.168.111.1', 10666),
-    ('192.168.111.2', 10666),
-    ('192.168.111.3', 10666),
-)
+import sys
 
 srvsockets = {}
 conns = {}
 
+def load_peers(filename, _id):
+    peers = []
+    with open(filename) as peersfile:
+        for line in peersfile:
+            if line[0] == '#':
+                continue
+            fields = line.strip().split()
+            if fields[0] == _id:
+                continue
+            peers.append((fields[1], int(fields[3])))
+    return tuple(peers)
+
 def main():
+    peers = load_peers(*sys.argv[1:])
+
     epoll = select.epoll()
     for peer in peers:
         sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
