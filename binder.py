@@ -28,7 +28,7 @@ def main():
     for peer in peers:
         sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sk.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        print("Binding to {0}:{1}".format(*peer))
+        print("Binding to TCP {0}:{1}".format(*peer))
         sk.bind(peer)
         sk.listen(1)
         sk.setblocking(0)
@@ -41,7 +41,7 @@ def main():
             if fileno in srvsockets.keys():
                 srvsk = srvsockets[fileno]
                 conn, addr = srvsk.accept()
-                print("Accepted connection from {0}:{1}".format(*addr))
+                print("Accepted TCP connection from {0}:{1}".format(*addr))
                 conn.setblocking(0)
                 epoll.register(conn.fileno(), select.EPOLLIN)
                 conns[conn.fileno()] = (conn, addr)
@@ -50,9 +50,9 @@ def main():
                 _input = conn.recv(1024)
                 # Receive data of length zero ==> connection closed.
                 if len(_input) > 0:
-                    print("From {1}:{2}: {0}".format(_input, *addr))
+                    print("From TCP {1}:{2}: {0}".format(_input, *addr))
                 else:
-                    print("Closing connection to {0}:{1}".format(*addr))
+                    print("Closing TCP connection from {0}:{1}".format(*addr))
                     conn.close()
                     conns.pop(fileno)
                     epoll.unregister(fileno)
