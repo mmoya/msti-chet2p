@@ -6,12 +6,23 @@ import random
 import select
 import socket
 import sys
+import threading
+import time
 
 PONG_FAILS = 0.3
 
 srvsockets = {}
 udpsockets = {}
 conns = {}
+
+def randsend():
+    while True:
+        if conns:
+            conn, addr = random.choice(list(conns.values()))
+            if conn:
+                print('Sending random data to TCP {0}:{1}'.format(*addr))
+                conn.send(b'A test...\n')
+        time.sleep(5)
 
 def load_peers(filename, _id):
     peers = []
@@ -48,6 +59,9 @@ def main():
         sk.setblocking(0)
         epoll.register(sk.fileno(), select.EPOLLIN)
         udpsockets[sk.fileno()] = sk
+
+    t = threading.Thread(target=randsend)
+    t.start()
 
     while True:
         events = epoll.poll(-1)
