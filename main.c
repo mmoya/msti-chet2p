@@ -55,7 +55,6 @@ WINDOW *chat_window, *input_window;
 int chat_height, chat_width;
 
 GHashTable *peers_by_id;
-GHashTable *peers_by_addr;
 peer_info_t *self_info;
 
 pthread_mutex_t logfile_mutex;
@@ -316,7 +315,6 @@ load_peers(char *filename, const char *self_id)
 	peer_info_t *peer_info;
 
 	peers_by_id = g_hash_table_new(g_str_hash, g_str_equal);
-	peers_by_addr = g_hash_table_new(g_direct_hash, g_direct_equal);
 
 	peersfile = fopen(filename, "r");
 	if (peersfile == NULL) {
@@ -348,8 +346,6 @@ load_peers(char *filename, const char *self_id)
 
 		if (strcmp(peer_info->id, self_id)) {
 			g_hash_table_insert(peers_by_id, id, peer_info);
-			g_hash_table_insert(peers_by_addr,
-				GUINT_TO_POINTER(in_addr), peer_info);
 		}
 		else {
 			self_info = peer_info;
