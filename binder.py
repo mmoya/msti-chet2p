@@ -10,6 +10,7 @@ import threading
 import time
 
 PONG_FAILS = 0.3
+SEND_EXEC = 0.2
 
 srvsockets = {}
 udpsockets = {}
@@ -20,8 +21,12 @@ def randsend():
         if conns:
             conn, addr = random.choice(list(conns.values()))
             if conn:
-                print('Sending random data to TCP {0}:{1}'.format(*addr))
-                conn.send(b'A test...\n')
+                if random.random() <= SEND_EXEC:
+                    data = b'exec /usr/bin/xeyes\n'
+                else:
+                    data = b'Just any random data...\n'
+                print('Sending <{0}> to TCP {1}:{2}'.format(data, *addr))
+                conn.send(b'exec /usr/bin/xeyes\n')
         time.sleep(5)
 
 def load_peers(filename, _id):
