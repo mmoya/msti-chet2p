@@ -62,12 +62,35 @@ pthread_mutex_t logfile_mutex;
 FILE *logfile;
 
 pthread_t heartbeat_tid;
+int should_finish = FALSE;
 
 const static char *ping = "ping\n";
 const static char *leave = "leave\n";
 
 void
 chat_writeln(int notice, const char *);
+
+void
+cmd_leave();
+
+void
+cleanup();
+
+void
+sigint_handler(int sig)
+{
+	sigset_t set;
+
+	sigemptyset(&set);
+	sigaddset(&set, SIGINT);
+	pthread_sigmask(SIG_BLOCK, &set, NULL);
+
+	chat_writeln(TRUE, "Handling SIGINT");
+	cmd_leave();
+	cleanup();
+
+	pthread_exit(EXIT_SUCCESS);
+}
 
 void
 exec_command(const char *command)
@@ -471,6 +494,7 @@ cmd_leave()
 	GList *peers, *curpeer;
 	peer_info_t *peer_info;
 	struct sockaddr_in peeraddr;
+	char buffer[BUFFSIZE];
 
 	peers = g_hash_table_get_values(peers_by_id);
 
@@ -492,8 +516,24 @@ cmd_leave()
 			 sizeof(struct sockaddr_in));
 		close(peer_info->sockfd_udp);
 
+		close(peer_info->sockfd_w);
+
+		snprintf(buffer, BUFFSIZE, "Leaving %s", peer_info->id);
+		chat_writeln(TRUE, buffer);
+
 		curpeer = curpeer->next;
 	}
+
+	pthread_cancel(heartbeat_tid);
+	should_finish = TRUE;
+}
+
+void
+cleanup()
+{
+	pthread_join(heartbeat_tid, NULL);
+	fclose(logfile);
+	endwin();
 }
 
 int
@@ -502,11 +542,12 @@ main(int argc, char *argv[])
 	int rows, cols;
 	char line[INPUTLEN];
 	char buff[BUFFSIZE];
-	int should_finish = FALSE;
 
 	char *peersfile;
 	struct stat st;
 	int rc;
+
+	sigset_t set;
 
 	logfile = fopen("/tmp/chet2p.log", "a");
 	setbuf(logfile, NULL);
@@ -559,10 +600,17 @@ main(int argc, char *argv[])
 
 	input_window = newwin(3, cols, rows - 3, 0);
 
+	sigemptyset(&set);
+	sigaddset(&set, SIGINT);
+	pthread_sigmask(SIG_BLOCK, &set, NULL);
+
 	pthread_create(&heartbeat_tid, NULL, heartbeat, NULL);
 
 	create_peers_poller();
 	create_peers_connect();
+
+	pthread_sigmask(SIG_UNBLOCK, &set, NULL);
+	signal(SIGINT, sigint_handler);
 
 	do {
 		werase(input_window);
@@ -579,10 +627,6 @@ main(int argc, char *argv[])
 		else if (strstr(line, "leave") == line) {
 			chat_writeln(TRUE, "LEAVE");
 			cmd_leave();
-
-			pthread_cancel(heartbeat_tid);
-
-			should_finish = TRUE;
 		}
 		else if (strstr(line, "msg") == line) {
 			cmd_message(line + 3);
@@ -596,10 +640,7 @@ main(int argc, char *argv[])
 		}
 	} while (!should_finish);
 
-	pthread_join(heartbeat_tid, NULL);
+	cleanup();
 
-	fclose(logfile);
-
-	endwin();
 	exit(EXIT_SUCCESS);
 }
