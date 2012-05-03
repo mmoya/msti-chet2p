@@ -70,6 +70,9 @@ void
 chat_writeln(int notice, const char *);
 
 void
+chat_message(const msgdir_t, const char *, const char *);
+
+void
 cmd_leave();
 
 void
@@ -201,8 +204,7 @@ peer_connect(void *data)
 			exec_command(command);
 		}
 		else {
-			snprintf(buffer, BUFFSIZE, "[%s] %s", peer_info->id, input);
-			chat_writeln(FALSE, buffer);
+			chat_message(MSGDIR_IN, peer_info->id, input);
 		}
 	}
 
