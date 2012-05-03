@@ -1,6 +1,33 @@
 #!/usr/bin/python3
 
-# http://scotdoyle.com/python-epoll-howto.html
+# Copyright © 2012 Maykel Moya <mmoya@mmoya.org>
+#
+# This file is part of chet2p
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# This simulate chet2p clients. For using it create a dummy device
+# and add peers.txt ips to it:
+#
+# modprod dummy
+# ip addr add 192.168.111.1/29 dev dummy0
+# ip addr add 192.168.111.2/29 dev dummy0
+# ip addr add 192.168.111.3/29 dev dummy0
+# ip addr add 192.168.111.4/29 dev dummy0
+#
+# With code borrowed from http://scotdoyle.com/python-epoll-howto.html
 
 import random
 import select
