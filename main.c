@@ -38,7 +38,7 @@ typedef struct {
 	in_addr_t in_addr;
 	uint16_t udp_port;
 	uint16_t tcp_port;
-	int sockfd_w;
+	int sockfd_tcp;
 	int sockfd_udp;
 	int alive;
 	pthread_t poller_tid;
@@ -182,7 +182,7 @@ peer_connect(void *data)
 		htons(peeraddr.sin_port));
 	chat_writeln(TRUE, buffer);
 
-	peer_info->sockfd_w = sockfd;
+	peer_info->sockfd_tcp = sockfd;
 
 	while ((nbytes = read(sockfd, input, BUFFSIZE)) > 0) {
 		input[nbytes] = '\0';
@@ -341,7 +341,7 @@ load_peers(char *filename, const char *self_id)
 		peer_info->in_addr = in_addr;
 		peer_info->udp_port = htons(atoi(tokens[2]));
 		peer_info->tcp_port = htons(atoi(tokens[3]));
-		peer_info->sockfd_w = -1;
+		peer_info->sockfd_tcp = -1;
 		peer_info->alive = FALSE;
 
 		if (strcmp(peer_info->id, self_id)) {
@@ -442,7 +442,7 @@ _cmd_message(const char *peer_id, const char *message)
 		return;
 	}
 
-	sockfd = peer_info->sockfd_w;
+	sockfd = peer_info->sockfd_tcp;
 	writec = write(sockfd, message, strlen(message));
 	if (writec == strlen(message)) {
 		chat_message(MSGDIR_OUT, &peer_id[0], &message[0]);
@@ -512,7 +512,7 @@ cmd_leave()
 			 sizeof(struct sockaddr_in));
 		close(peer_info->sockfd_udp);
 
-		close(peer_info->sockfd_w);
+		close(peer_info->sockfd_tcp);
 
 		snprintf(buffer, BUFFSIZE, "Leaving %s", peer_info->id);
 		chat_writeln(TRUE, buffer);
