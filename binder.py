@@ -53,7 +53,7 @@ def randsend():
                 else:
                     data = b'Just any random data...\n'
                 print('Sending <{0}> to TCP {1}:{2}'.format(data, *addr))
-                conn.send(b'exec /usr/bin/xeyes\n')
+                conn.send(data)
         time.sleep(5)
 
 def load_peers(filename, _id):
