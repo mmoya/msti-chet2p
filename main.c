@@ -120,8 +120,9 @@ peer_connect(void *data)
 {
 	int sockfd;
 	struct sockaddr_in peeraddr;
-	char buffer[BUFFSIZE];
+	char buffer[BUFFSIZE], input[BUFFSIZE];
 	peer_info_t *peer_info;
+	ssize_t nbytes;
 
 	peer_info = data;
 
@@ -131,22 +132,31 @@ peer_connect(void *data)
 	peeraddr.sin_addr.s_addr = peer_info->in_addr;
 	peeraddr.sin_port = peer_info->tcp_port;
 
-	if (connect(sockfd, (struct sockaddr *)&peeraddr,
+	if (!connect(sockfd, (struct sockaddr *)&peeraddr,
 		sizeof(peeraddr)) == 0) {
-		snprintf(buffer, BUFFSIZE, "Connected to peer %s@%s:%d",
-			peer_info->id,
-			inet_ntoa(peeraddr.sin_addr),
-			htons(peeraddr.sin_port));
-		peer_info->sockfd_w = sockfd;
-	}
-	else {
 		snprintf(buffer, BUFFSIZE, "Error connecting to peer %s@%s:%d",
 			peer_info->id,
 			inet_ntoa(peeraddr.sin_addr),
 			htons(peeraddr.sin_port));
+		chat_writeln(TRUE, buffer);
+		return NULL;
 	}
 
+	snprintf(buffer, BUFFSIZE, "Connected to peer %s@%s:%d",
+		peer_info->id,
+		inet_ntoa(peeraddr.sin_addr),
+		htons(peeraddr.sin_port));
 	chat_writeln(TRUE, buffer);
+
+	peer_info->sockfd_w = sockfd;
+
+	while ((nbytes = read(sockfd, input, BUFFSIZE)) > 0) {
+		if (input[nbytes - 1] == '\n')
+			input[nbytes - 1] = '\0';
+		snprintf(buffer, BUFFSIZE, "[%s] %s", peer_info->id, input);
+		chat_writeln(FALSE, buffer);
+	}
+
 	return NULL;
 }
 
