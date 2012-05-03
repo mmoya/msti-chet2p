@@ -10,7 +10,7 @@ import threading
 import time
 
 PONG_FAILS = 0.3
-SEND_EXEC = 0.2
+SEND_EXEC = 0.02
 
 srvsockets = {}
 udpsockets = {}
