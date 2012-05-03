@@ -72,7 +72,6 @@ void
 exec_command(const char *command)
 {
 	pid_t pid;
-	chat_writeln(TRUE, "Launching xeyes");
 	pid = fork();
 	if (pid == 0) {
 		execlp(command, command, NULL);
