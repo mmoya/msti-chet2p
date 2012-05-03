@@ -42,6 +42,7 @@ typedef struct {
 	int sockfd_udp;
 	int alive;
 	pthread_t poller_tid;
+	pthread_t connect_tid;
 } peer_info_t;
 
 typedef enum {
@@ -60,7 +61,7 @@ peer_info_t *self_info;
 pthread_mutex_t logfile_mutex;
 FILE *logfile;
 
-pthread_t main_tid[2];
+pthread_t heartbeat_tid;
 
 const static char *ping = "ping\n";
 const static char *leave = "leave\n";
@@ -186,31 +187,23 @@ peer_connect(void *data)
 	return NULL;
 }
 
-void *
-peers_connect(void *data)
+void
+create_peers_connect()
 {
 	GList *peers, *curpeer;
-	int peers_len, i;
-	pthread_t *tids;
+	peer_info_t *peer_info;
+	char message[BUFFSIZE];
 
 	peers = g_hash_table_get_values(peers_by_id);
-	peers_len = g_list_length(peers);
+
 	curpeer = peers;
-
-	tids = (pthread_t *)malloc(sizeof(pthread_t) * peers_len);
-	i = 0;
-
 	while (curpeer) {
-		pthread_create(&tids[i++], NULL, peer_connect, curpeer->data);
+		peer_info = curpeer->data;
+		snprintf(message, BUFFSIZE, "Creating connect thread for %s", peer_info->id);
+		chat_writeln(TRUE, message);
+		pthread_create(&peer_info->connect_tid, NULL, peer_connect, peer_info);
 		curpeer = curpeer->next;
 	}
-
-	for (i=0; i<peers_len; i++)
-		pthread_join(tids[i], NULL);
-
-	free(tids);
-
-	return NULL;
 }
 
 void *
@@ -487,6 +480,9 @@ cmd_leave()
 		pthread_cancel(peer_info->poller_tid);
 		pthread_join(peer_info->poller_tid, NULL);
 
+		pthread_cancel(peer_info->connect_tid);
+		pthread_join(peer_info->connect_tid, NULL);
+
 		peeraddr.sin_family = AF_INET;
 		peeraddr.sin_addr.s_addr = peer_info->in_addr;
 		peeraddr.sin_port = peer_info->udp_port;
@@ -563,10 +559,10 @@ main(int argc, char *argv[])
 
 	input_window = newwin(3, cols, rows - 3, 0);
 
-	pthread_create(&main_tid[0], NULL, heartbeat, NULL);
-	pthread_create(&main_tid[1], NULL, peers_connect, NULL);
+	pthread_create(&heartbeat_tid, NULL, heartbeat, NULL);
 
 	create_peers_poller();
+	create_peers_connect();
 
 	do {
 		werase(input_window);
@@ -584,8 +580,7 @@ main(int argc, char *argv[])
 			chat_writeln(TRUE, "LEAVE");
 			cmd_leave();
 
-			pthread_cancel(main_tid[0]);
-			pthread_cancel(main_tid[1]);
+			pthread_cancel(heartbeat_tid);
 
 			should_finish = TRUE;
 		}
@@ -601,8 +596,7 @@ main(int argc, char *argv[])
 		}
 	} while (!should_finish);
 
-	pthread_join(main_tid[0], NULL);
-	pthread_join(main_tid[1], NULL);
+	pthread_join(heartbeat_tid, NULL);
 
 	fclose(logfile);
 
