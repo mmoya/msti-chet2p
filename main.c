@@ -57,9 +57,6 @@ int chat_height, chat_width;
 GHashTable *peers_by_id;
 peer_info_t *self_info;
 
-pthread_mutex_t logfile_mutex;
-FILE *logfile;
-
 pthread_t heartbeat_tid;
 int should_finish = FALSE;
 
@@ -530,7 +527,6 @@ void
 cleanup()
 {
 	pthread_join(heartbeat_tid, NULL);
-	fclose(logfile);
 	endwin();
 }
 
@@ -546,10 +542,6 @@ main(int argc, char *argv[])
 	int rc;
 
 	sigset_t set;
-
-	logfile = fopen("/tmp/chet2p.log", "a");
-	setbuf(logfile, NULL);
-	pthread_mutex_init(&logfile_mutex, NULL);
 
 	if (argc < 3) {
 		fprintf(stderr, "Usage: %s <peers_file> <self_id>\n", argv[0]);
