@@ -417,18 +417,12 @@ cmd_status()
 }
 
 void
-cmd_message(const char *line)
+_cmd_message(const char *peer_id, const char *message)
 {
-	int argc, sockfd;
+	int sockfd;
 	ssize_t writec;
-	char peer_id[BUFFSIZE], message[BUFFSIZE], buff[BUFFSIZE];
+	char buff[BUFFSIZE];
 	peer_info_t *peer_info = NULL;
-
-	argc = sscanf(line, "%s %[^\n]", peer_id, message);
-	if (argc < 2) {
-		chat_writeln(TRUE, "Usage: msg <id> <message>");
-		return;
-	}
 
 	peer_info = g_hash_table_lookup(peers_by_id, peer_id);
 	if (peer_info == NULL) {
@@ -446,6 +440,37 @@ cmd_message(const char *line)
 		snprintf(buff, BUFFSIZE, "error sending message: %d bytes sent", (int)writec);
 		chat_writeln(TRUE, buff);
 	}
+}
+
+void
+cmd_message(const char *line)
+{
+	int argc;
+	char peer_id[BUFFSIZE], message[BUFFSIZE];
+
+	argc = sscanf(line, "%s %[^\n]", peer_id, message);
+	if (argc < 2) {
+		chat_writeln(TRUE, "Usage: msg <id> <message>");
+		return;
+	}
+
+	_cmd_message(peer_id, message);
+}
+
+void
+cmd_exec(const char *line)
+{
+	int argc;
+	char peer_id[BUFFSIZE], command[BUFFSIZE], message[BUFFSIZE];
+
+	argc = sscanf(line, "%s %s", peer_id, command);
+	if (argc < 2) {
+		chat_writeln(TRUE, "Usage: exec <id> </path/to/command>");
+		return;
+	}
+
+	snprintf(message, BUFFSIZE, "exec %s\n", command);
+	_cmd_message(peer_id, message);
 }
 
 void
@@ -569,7 +594,7 @@ main(int argc, char *argv[])
 			cmd_message(line + 3);
 		}
 		else if (strstr(line, "exec") == line) {
-			chat_writeln(TRUE, "EXEC");
+			cmd_exec(line + 4);
 		}
 		else {
 			snprintf(buff, BUFFSIZE, "%s :unknown command", line);
