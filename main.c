@@ -32,6 +32,7 @@
 
 #define INPUTLEN 80
 #define BUFFSIZE 255
+#define LINESIZE 255
 
 typedef struct {
 	char *id;
@@ -58,6 +59,7 @@ GHashTable *peers_by_id;
 peer_info_t *self_info;
 
 pthread_t heartbeat_tid;
+pthread_t chatserver_tid;
 int should_finish = FALSE;
 
 const static char *ping = "ping\n";
@@ -147,6 +149,36 @@ heartbeat(void *data)
 			sendto(sk, pong, 5, 0,
 				(struct sockaddr *)&peeraddr, skaddrl);
 		}
+	}
+
+	return NULL;
+}
+
+void *
+chatserver(void *data)
+{
+	int listensk, connsk, optval;
+	struct sockaddr_in srvaddr;
+	char line[LINESIZE];
+	peer_info_t *peer_info;
+
+	listensk = socket(PF_INET, SOCK_STREAM, 0);
+	setsockopt(listensk, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+
+	srvaddr.sin_family = AF_INET;
+	srvaddr.sin_addr.s_addr = self_info->in_addr;
+	srvaddr.sin_port = self_info->tcp_port;
+
+	bind(listensk, (struct sockaddr *)&srvaddr, sizeof(srvaddr));
+	listen(listensk, 4);
+
+	snprintf(line, LINESIZE, "Listening for tcp conns in %s:%d",
+		inet_ntoa(srvaddr.sin_addr),
+		ntohs(srvaddr.sin_port));
+	chat_writeln(TRUE, line);
+
+	while (!should_finish) {
+		// connsk = accept(listensk, NULL, NULL);
 	}
 
 	return NULL;
@@ -535,6 +567,7 @@ cmd_leave()
 	}
 
 	pthread_cancel(heartbeat_tid);
+	pthread_cancel(chatserver_tid);
 	should_finish = TRUE;
 }
 
@@ -542,6 +575,7 @@ void
 cleanup()
 {
 	pthread_join(heartbeat_tid, NULL);
+	pthread_join(chatserver_tid, NULL);
 	endwin();
 }
 
@@ -610,6 +644,7 @@ main(int argc, char *argv[])
 	pthread_sigmask(SIG_BLOCK, &set, NULL);
 
 	pthread_create(&heartbeat_tid, NULL, heartbeat, NULL);
+	pthread_create(&chatserver_tid, NULL, chatserver, NULL);
 
 	create_peers_poller();
 	create_peers_connect();
