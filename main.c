@@ -126,7 +126,6 @@ heartbeat(void *data)
 
 	bind(sk, (struct sockaddr *)&srvaddr, sizeof(srvaddr));
 
-	chat_writeln(TRUE, "Socket binded");
 	snprintf(line, BUFFSIZE, "Listening for udp heartbeats in %s:%d",
 		inet_ntoa(srvaddr.sin_addr),
 		ntohs(srvaddr.sin_port));
