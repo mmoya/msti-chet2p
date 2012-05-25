@@ -347,6 +347,7 @@ load_peers(char *filename, const char *self_id)
 			tokens[i] = strtok(i == 0 ? buffer : NULL, " ");
 
 		peer_info = (peer_info_t *)malloc(sizeof(peer_info_t));
+		memset(peer_info, 0, sizeof(peer_info_t));
 		id = (char *)malloc(strlen(tokens[0]) + 1);
 		strcpy(id, tokens[0]);
 		peer_info->id = (char *)malloc(strlen(tokens[0]) + 1);
