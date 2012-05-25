@@ -255,6 +255,12 @@ peer_poller(void *data)
 
 	addrlen = sizeof(struct sockaddr_in);
 
+	snprintf(buffer, BUFFSIZE, "started polling thread for %s@%s:%d",
+		peer_info->id,
+		inet_ntoa(peeraddr.sin_addr),
+		ntohs(peeraddr.sin_port));
+	chat_writeln(TRUE, buffer);
+
 	while (TRUE) {
 		sendto(peer_info->sockfd_udp, ping, strlen(ping), 0,
 			(struct sockaddr *)&peeraddr,
@@ -278,6 +284,12 @@ peer_poller(void *data)
 		sleep(waitsec);
 	}
 
+	snprintf(buffer, BUFFSIZE, "finishing polling thread for %s@%s:%d",
+		peer_info->id,
+		inet_ntoa(peeraddr.sin_addr),
+		ntohs(peeraddr.sin_port));
+	chat_writeln(TRUE, buffer);
+
 	return NULL;
 }
 
@@ -292,7 +304,6 @@ create_peers_poller()
 	curpeer = peers;
 	while (curpeer) {
 		peer_info = curpeer->data;
-		chat_writeln(1, "Creating poller thread...");
 		pthread_create(&peer_info->poller_tid, NULL, peer_poller, peer_info);
 		curpeer = curpeer->next;
 	}
