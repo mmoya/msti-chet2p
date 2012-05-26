@@ -343,7 +343,7 @@ main(int argc, char *argv[])
 	pthread_sigmask(SIG_UNBLOCK, &set, NULL);
 	signal(SIGINT, sigint_handler);
 
-	do {
+	while (!should_finish) {
 		werase(input_window);
 		wborder(input_window, ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
 				      ACS_LTEE, ACS_RTEE, ACS_LLCORNER, ACS_LRCORNER);
@@ -372,7 +372,7 @@ main(int argc, char *argv[])
 			snprintf(buff, BUFFSIZE, "%s :unknown command", line);
 			chat_writeln(TRUE, buff);
 		}
-	} while (!should_finish);
+	}
 
 	cleanup();
 
