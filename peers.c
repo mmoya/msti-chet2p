@@ -112,7 +112,7 @@ update_peer_status(peer_info_t *peer_info, int status) {
 
 	if (prev_status != status) {
 		snprintf(line, LINESIZE, "%s changed status to %s", peer_info->id,
-			 status ? "alive" : "dead");
+			 status ? "alive" : "not alive");
 		chat_writeln(TRUE, line);
 	}
 
