@@ -30,6 +30,9 @@ void
 cmd_exec(const char *line);
 
 void
+cmd_broadcast(const char *message);
+
+void
 cmd_leave();
 
 #endif /* _COMMANDS_H */

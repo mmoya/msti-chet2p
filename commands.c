@@ -116,6 +116,21 @@ cmd_exec(const char *line)
 }
 
 void
+cmd_broadcast(const char *message) {
+	GList *peers, *curpeer;
+	peer_info_t *peer_info;
+
+	peers = g_hash_table_get_values(peers_by_id);
+	curpeer = peers;
+
+	while (curpeer) {
+		peer_info = curpeer->data;
+		send_message(peer_info, message);
+		curpeer = curpeer->next;
+	}
+}
+
+void
 cmd_leave()
 {
 	GList *peers, *curpeer;
