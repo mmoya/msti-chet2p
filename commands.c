@@ -127,7 +127,8 @@ cmd_broadcast(const char *message) {
 
 	while (curpeer) {
 		peer_info = curpeer->data;
-		send_message(peer_info, message);
+		if (peer_info->alive)
+			send_message(peer_info, message);
 		curpeer = curpeer->next;
 	}
 }
