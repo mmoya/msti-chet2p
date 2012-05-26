@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -Wall -ggdb $(shell pkg-config --cflags glib-2.0)
-LDFLAGS = -lncurses -lpthread $(shell pkg-config --libs glib-2.0)
+CFLAGS = -Wall -ggdb $(shell pkg-config --cflags glib-2.0,ncursesw)
+LDFLAGS = -lpthread $(shell pkg-config --libs glib-2.0,ncursesw)
 
 ifeq ($D, 1)
 	CFLAGS += -DDEBUG
