@@ -20,6 +20,9 @@
 #ifndef _PEERS_H
 #define _PEERS_H
 
+void
+exec_command(const char *command);
+
 void *
 peer_connect(void *data);
 
