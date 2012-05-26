@@ -34,10 +34,12 @@ typedef struct {
 	uint16_t udp_port;
 	uint16_t tcp_port;
 	int sockfd_tcp;
+	int sockfd_tcp_in;
 	int sockfd_udp;
 	int alive;
 	pthread_t poller_tid;
 	pthread_t connect_tid;
+	pthread_t client_tid;
 } peer_info_t;
 
 extern GHashTable *peers_by_id;

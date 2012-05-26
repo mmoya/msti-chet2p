@@ -38,6 +38,8 @@ int chat_height, chat_width;
 GHashTable *peers_by_id;
 peer_info_t *self_info;
 
+GHashTable *anon_conns;
+
 pthread_t heartbeat_tid;
 pthread_t chatserver_tid;
 int should_finish = FALSE;
@@ -112,12 +114,110 @@ heartbeat(void *data)
 }
 
 void *
+chatclient(void *data)
+{
+	int sockfd = *(int *)data;
+
+	peer_info_t *peer_info;
+	struct sockaddr_storage peeraddr_stor;
+	socklen_t peeraddr_storl = sizeof(peeraddr_stor);
+	struct sockaddr_in *peeraddr;
+	char peeraddrs[INET_ADDRSTRLEN];
+	int port;
+	char line[LINESIZE];
+	char buffer[BUFFSIZE];
+	int nbytes;
+	char *command;
+
+	char *id;
+	int identified = 0;
+
+	getpeername(sockfd, (struct sockaddr *)&peeraddr_stor, &peeraddr_storl);
+	peeraddr = (struct sockaddr_in *)&peeraddr_stor;
+	inet_ntop(AF_INET, &peeraddr->sin_addr, peeraddrs, sizeof(peeraddrs));
+	port = ntohs(peeraddr->sin_port);
+
+	snprintf(line, LINESIZE, "accepted tcp connection from anon@%s:%d, waiting for id",
+		peeraddrs, port);
+	chat_writeln(TRUE, line);
+
+	while ((nbytes = read(sockfd, buffer, BUFFSIZE)) > 0) {
+		buffer[nbytes] = '\0';
+
+		if (buffer[nbytes - 1] == '\n')
+			buffer[nbytes - 1] = '\0';
+
+		if (!identified && strstr(buffer, "id") == buffer) {
+			id = buffer + 3;
+
+			peer_info = g_hash_table_lookup(peers_by_id, id);
+			if (peer_info) {
+				if (peer_info->client_tid && pthread_kill(peer_info->client_tid, 0) == 0) {
+					snprintf(line, LINESIZE, "%s is already connected\n", id);
+					write(sockfd, line, strlen(line));
+					identified = 0;
+					continue;
+				}
+
+				identified = 1;
+
+				g_hash_table_remove(anon_conns, data);
+
+				peer_info->sockfd_tcp_in = sockfd;
+				peer_info->client_tid = pthread_self();
+
+				snprintf(line, LINESIZE, "tcp connection from %s:%d identified itself as %s",
+					peeraddrs, port, peer_info->id);
+				chat_writeln(TRUE, line);
+
+				continue;
+			}
+			else {
+				snprintf(line, LINESIZE, "unregistered id %s\n", id);
+				write(sockfd, line, strlen(line));
+				identified = 0;
+			}
+		}
+
+		if (!identified) {
+			snprintf(line, LINESIZE, "please identify by sending: id <name>\n");
+			write(sockfd, line, strlen(line));
+			continue;
+		}
+
+		if (strstr(buffer, "leave") == buffer) {
+			close(sockfd);
+			peer_info->alive = FALSE;
+			break;
+		}
+		else if (strstr(buffer, "exec") == buffer) {
+			command = buffer + 5;
+			chat_writeln(TRUE, command);
+			exec_command(command);
+		}
+		else {
+			chat_message(MSGDIR_IN, peer_info->id, buffer);
+		}
+	}
+
+	snprintf(line, LINESIZE, "closing tcp connection from %s@%s:%d",
+		identified ? peer_info->id : "anon", peeraddrs, port);
+	chat_writeln(TRUE, line);
+
+	g_hash_table_remove(anon_conns, data);
+	close(sockfd);
+
+	return NULL;
+}
+
+void *
 chatserver(void *data)
 {
 	int listensk, connsk, optval;
 	struct sockaddr_in srvaddr;
 	char line[LINESIZE];
-	peer_info_t *peer_info;
+	int *pconnsk;
+	pthread_t *client_tid;
 
 	listensk = socket(PF_INET, SOCK_STREAM, 0);
 	setsockopt(listensk, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
@@ -134,8 +234,17 @@ chatserver(void *data)
 		ntohs(srvaddr.sin_port));
 	chat_writeln(TRUE, line);
 
+	anon_conns = g_hash_table_new_full(g_int_hash, g_int_equal, g_free, g_free);
+
 	while (!should_finish) {
-		// connsk = accept(listensk, NULL, NULL);
+		connsk = accept(listensk, NULL, NULL);
+
+		client_tid = (pthread_t *)g_malloc(sizeof(pthread_t));
+		pconnsk = (int *)g_malloc(sizeof(int));
+		*pconnsk = connsk;
+
+		g_hash_table_insert(anon_conns, pconnsk, client_tid);
+		pthread_create(client_tid, NULL, chatclient, pconnsk);
 	}
 
 	return NULL;
