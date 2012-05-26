@@ -169,6 +169,7 @@ chatclient(void *data)
 
 				peer_info->sockfd_tcp_in = sockfd;
 				peer_info->client_tid = pthread_self();
+				update_peer_status(peer_info, TRUE);
 
 				snprintf(line, LINESIZE, "tcp connection from %s:%d identified itself as %s",
 					peeraddrs, port, peer_info->id);
@@ -191,7 +192,7 @@ chatclient(void *data)
 
 		if (strstr(buffer, "leave") == buffer) {
 			close(sockfd);
-			peer_info->alive = FALSE;
+			update_peer_status(peer_info, FALSE);
 			break;
 		}
 		else if (strstr(buffer, "exec") == buffer) {
@@ -208,6 +209,8 @@ chatclient(void *data)
 		identified ? peer_info->id : "anon", peeraddrs, port);
 	chat_writeln(TRUE, line);
 
+	if (peer_info)
+		update_peer_status(peer_info, FALSE);
 	g_hash_table_remove(anon_conns, data);
 	close(sockfd);
 

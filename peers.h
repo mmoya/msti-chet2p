@@ -23,6 +23,9 @@
 void
 exec_command(const char *command);
 
+void
+update_peer_status(peer_info_t *peer_info, int status);
+
 void *
 peer_connect(void *data);
 

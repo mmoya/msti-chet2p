@@ -26,6 +26,7 @@
 #include "chatgui.h"
 #include "chet2p.h"
 #include "commands.h"
+#include "peers.h"
 
 void
 exec_command(const char *command)
@@ -84,7 +85,7 @@ peer_connect(void *data)
 
 		if (strstr(input, "leave") == input) {
 			close(sockfd);
-			peer_info->alive = FALSE;
+			update_peer_status(peer_info, FALSE);
 			break;
 		}
 		else if (strstr(input, "exec") == input) {
