@@ -65,13 +65,16 @@ peer_connect(void *data)
 		return NULL;
 	}
 
-	snprintf(buffer, BUFFSIZE, "Connected to peer %s@%s:%d",
+	snprintf(buffer, BUFFSIZE, "Connected to peer %s@%s:%d, sending id",
 		peer_info->id,
 		inet_ntoa(peeraddr.sin_addr),
 		htons(peeraddr.sin_port));
 	chat_writeln(TRUE, buffer);
 
 	peer_info->sockfd_tcp = sockfd;
+
+	snprintf(buffer, BUFFSIZE, "id %s\n", self_info->id);
+	write(sockfd, buffer, strlen(buffer));
 
 	while ((nbytes = read(sockfd, input, BUFFSIZE)) > 0) {
 		input[nbytes] = '\0';
