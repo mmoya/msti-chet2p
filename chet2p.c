@@ -358,14 +358,14 @@ main(int argc, char *argv[])
 			chat_writeln(TRUE, "LEAVE");
 			cmd_leave();
 		}
-		else if (strstr(line, "msg") == line) {
-			cmd_message(line + 3);
+		else if (strstr(line, "msg ") == line) {
+			cmd_message(line + 4);
 		}
-		else if (strstr(line, "bcast") == line) {
-			cmd_broadcast(line + 5);
+		else if (strstr(line, "bcast ") == line) {
+			cmd_broadcast(line + 6);
 		}
-		else if (strstr(line, "exec") == line) {
-			cmd_exec(line + 4);
+		else if (strstr(line, "exec ") == line) {
+			cmd_exec(line + 5);
 		}
 		else {
 			snprintf(buff, BUFFSIZE, "%s :unknown command", line);
