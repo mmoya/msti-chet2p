@@ -107,13 +107,13 @@ cmd_exec(const char *line)
 	int argc;
 	char peer_id[BUFFSIZE], command[BUFFSIZE], message[BUFFSIZE];
 
-	argc = sscanf(line, "%s %s", peer_id, command);
+	argc = sscanf(line, "%s %s[^\n]", peer_id, command);
 	if (argc < 2) {
 		chat_writeln(TRUE, "Usage: exec <id> </path/to/command>");
 		return;
 	}
 
-	snprintf(message, BUFFSIZE, "exec %s\n", command);
+	snprintf(message, BUFFSIZE, "exec %s", command);
 	_cmd_message(peer_id, message);
 }
 
