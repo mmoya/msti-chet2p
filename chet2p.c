@@ -89,7 +89,7 @@ heartbeat(void *data)
 
 	bind(sk, (struct sockaddr *)&srvaddr, sizeof(srvaddr));
 
-	snprintf(line, BUFFSIZE, "Listening for udp heartbeats in %s:%d",
+	snprintf(line, BUFFSIZE, "listening for udp heartbeats in %s:%d",
 		inet_ntoa(srvaddr.sin_addr),
 		ntohs(srvaddr.sin_port));
 	chat_writeln(TRUE, line);
@@ -100,14 +100,14 @@ heartbeat(void *data)
 		if (buffer[read - 1] == '\n')
 			buffer[read - 1] = '\0';
 #ifdef DEBUG
-		snprintf(line, BUFFSIZE, "Received <%s> from %s:%d",
+		snprintf(line, BUFFSIZE, "received <%s> from %s:%d",
 			buffer, inet_ntoa(peeraddr.sin_addr),
 			ntohs(peeraddr.sin_port));
 		chat_writeln(TRUE, line);
 #endif
 		if (strncmp(buffer, "ping", BUFFSIZE) == 0) {
 #ifdef DEBUG
-			chat_writeln(TRUE, "Sending pong");
+			chat_writeln(TRUE, "sending pong");
 #endif
 			sendto(sk, pong, 5, 0,
 				(struct sockaddr *)&peeraddr, skaddrl);
@@ -233,7 +233,7 @@ chatserver(void *data)
 	bind(listensk, (struct sockaddr *)&srvaddr, sizeof(srvaddr));
 	listen(listensk, 4);
 
-	snprintf(line, LINESIZE, "Listening for tcp conns in %s:%d",
+	snprintf(line, LINESIZE, "listening for tcp conns in %s:%d",
 		inet_ntoa(srvaddr.sin_addr),
 		ntohs(srvaddr.sin_port));
 	chat_writeln(TRUE, line);

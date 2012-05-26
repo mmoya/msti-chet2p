@@ -57,7 +57,7 @@ peer_connect(void *data)
 
 	if (!connect(sockfd, (struct sockaddr *)&peeraddr,
 		sizeof(peeraddr)) == 0) {
-		snprintf(buffer, BUFFSIZE, "Error connecting to peer %s@%s:%d",
+		snprintf(buffer, BUFFSIZE, "error connecting to peer %s@%s:%d",
 			peer_info->id,
 			inet_ntoa(peeraddr.sin_addr),
 			htons(peeraddr.sin_port));
@@ -65,7 +65,7 @@ peer_connect(void *data)
 		return NULL;
 	}
 
-	snprintf(buffer, BUFFSIZE, "Connected to peer %s@%s:%d, sending id",
+	snprintf(buffer, BUFFSIZE, "connected to peer %s@%s:%d, sending id",
 		peer_info->id,
 		inet_ntoa(peeraddr.sin_addr),
 		htons(peeraddr.sin_port));
