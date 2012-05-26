@@ -260,6 +260,7 @@ chatserver(void *data)
 void
 cleanup()
 {
+	close(heartbtsk);
 	close(chatsrvsk);
 	pthread_join(heartbeat_tid, NULL);
 	pthread_join(chatserver_tid, NULL);
