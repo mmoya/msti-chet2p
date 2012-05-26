@@ -86,7 +86,7 @@ peer_connect(void *data)
 			input[nbytes - 1] = '\0';
 
 		if (strstr(input, "leave") == input) {
-			close(sockfd);
+			shutdown(sockfd, 2);
 			update_peer_status(peer_info, FALSE);
 			break;
 		}
@@ -124,27 +124,6 @@ update_peer_status(peer_info_t *peer_info, int status) {
 				peer_info->connect_tid, peer_info->id);
 			chat_writeln(TRUE, LOG_DEBUG, line);
 #endif
-		}
-	}
-	else {
-		if (peer_info->connect_tid && pthread_kill(peer_info->connect_tid, 0) == 0) {
-#ifdef DEBUG
-			snprintf(line, LINESIZE, "terminating connect thread %lu for client %s",
-				peer_info->connect_tid, peer_info->id);
-			chat_writeln(TRUE, LOG_DEBUG, line);
-#endif
-			pthread_cancel(peer_info->connect_tid);
-			close(peer_info->sockfd_tcp);
-		}
-
-		if (peer_info->client_tid && pthread_kill(peer_info->client_tid, 0) == 0) {
-#ifdef DEBUG
-			snprintf(line, LINESIZE, "terminating client thread %lu for client %s",
-				peer_info->client_tid, peer_info->id);
-			chat_writeln(TRUE, LOG_DEBUG, line);
-#endif
-			pthread_cancel(peer_info->client_tid);
-			close(peer_info->sockfd_tcp_in);
 		}
 	}
 }
