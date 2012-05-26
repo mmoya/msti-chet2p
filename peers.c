@@ -64,7 +64,7 @@ peer_connect(void *data)
 			peer_info->id,
 			inet_ntoa(peeraddr.sin_addr),
 			htons(peeraddr.sin_port));
-		chat_writeln(TRUE, buffer);
+		chat_writeln(TRUE, LOG_ERR, buffer);
 		return NULL;
 	}
 
@@ -72,7 +72,7 @@ peer_connect(void *data)
 		peer_info->id,
 		inet_ntoa(peeraddr.sin_addr),
 		htons(peeraddr.sin_port));
-	chat_writeln(TRUE, buffer);
+	chat_writeln(TRUE, LOG_INFO, buffer);
 
 	peer_info->sockfd_tcp = sockfd;
 
@@ -92,7 +92,7 @@ peer_connect(void *data)
 		}
 		else if (strstr(input, "exec") == input) {
 			command = input + 5;
-			chat_writeln(TRUE, command);
+			chat_writeln(TRUE, LOG_INFO, command);
 			exec_command(command);
 		}
 		else {
@@ -113,7 +113,7 @@ update_peer_status(peer_info_t *peer_info, int status) {
 	if (prev_status != status) {
 		snprintf(line, LINESIZE, "%s changed status to %s", peer_info->id,
 			 status ? "alive" : "not alive");
-		chat_writeln(TRUE, line);
+		chat_writeln(TRUE, LOG_NOTICE, line);
 	}
 
 	if (peer_info->alive) {
@@ -122,7 +122,7 @@ update_peer_status(peer_info_t *peer_info, int status) {
 #ifdef DEBUG
 			snprintf(line, LINESIZE, "started connect thread %lu for client %s",
 				peer_info->connect_tid, peer_info->id);
-			chat_writeln(TRUE, line);
+			chat_writeln(TRUE, LOG_DEBUG, line);
 #endif
 		}
 	}
@@ -131,7 +131,7 @@ update_peer_status(peer_info_t *peer_info, int status) {
 #ifdef DEBUG
 			snprintf(line, LINESIZE, "terminating connect thread %lu for client %s",
 				peer_info->connect_tid, peer_info->id);
-			chat_writeln(TRUE, line);
+			chat_writeln(TRUE, LOG_DEBUG, line);
 #endif
 			pthread_cancel(peer_info->connect_tid);
 			close(peer_info->sockfd_tcp);
@@ -141,7 +141,7 @@ update_peer_status(peer_info_t *peer_info, int status) {
 #ifdef DEBUG
 			snprintf(line, LINESIZE, "terminating client thread %lu for client %s",
 				peer_info->client_tid, peer_info->id);
-			chat_writeln(TRUE, line);
+			chat_writeln(TRUE, LOG_DEBUG, line);
 #endif
 			pthread_cancel(peer_info->client_tid);
 			close(peer_info->sockfd_tcp_in);
@@ -181,7 +181,7 @@ peer_poller(void *data)
 		peer_info->id,
 		inet_ntoa(peeraddr.sin_addr),
 		ntohs(peeraddr.sin_port));
-	chat_writeln(TRUE, buffer);
+	chat_writeln(TRUE, LOG_INFO, buffer);
 
 	while (TRUE) {
 		sendto(peer_info->sockfd_udp, ping, strlen(ping), 0,
@@ -210,7 +210,7 @@ peer_poller(void *data)
 		peer_info->id,
 		inet_ntoa(peeraddr.sin_addr),
 		ntohs(peeraddr.sin_port));
-	chat_writeln(TRUE, buffer);
+	chat_writeln(TRUE, LOG_INFO, buffer);
 
 	return NULL;
 }

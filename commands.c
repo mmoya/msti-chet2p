@@ -42,7 +42,7 @@ cmd_status()
 
 		snprintf(buff, BUFFSIZE, "[%s] is %salive", peer_info->id,
 			peer_info->alive ? "" : "not ");
-		chat_writeln(FALSE, buff);
+		chat_writeln(FALSE, LOG_INFO, buff);
 
 		curpeer = curpeer->next;
 	}
@@ -56,7 +56,7 @@ send_message(const peer_info_t *peer_info, const char *message)
 
 	if (!peer_info->alive) {
 		snprintf(buff, BUFFSIZE, "%s :not alive", peer_info->id);
-		chat_writeln(TRUE, buff);
+		chat_writeln(TRUE, LOG_ERR, buff);
 		return;
 	}
 
@@ -66,7 +66,7 @@ send_message(const peer_info_t *peer_info, const char *message)
 	}
 	else {
 		snprintf(buff, BUFFSIZE, "error sending message: %d bytes sent", (int)writec);
-		chat_writeln(TRUE, buff);
+		chat_writeln(TRUE, LOG_ERR, buff);
 	}
 }
 
@@ -79,7 +79,7 @@ _cmd_message(const char *peer_id, const char *message)
 	peer_info = g_hash_table_lookup(peers_by_id, peer_id);
 	if (peer_info == NULL) {
 		snprintf(line, LINESIZE, "%s :unknown id", peer_id);
-		chat_writeln(TRUE, line);
+		chat_writeln(TRUE, LOG_ERR, line);
 		return;
 	}
 
@@ -94,7 +94,7 @@ cmd_message(const char *line)
 
 	argc = sscanf(line, "%s %[^\n]", peer_id, message);
 	if (argc < 2) {
-		chat_writeln(TRUE, "Usage: msg <id> <message>");
+		chat_writeln(TRUE, LOG_ERR, "Usage: msg <id> <message>");
 		return;
 	}
 
@@ -109,7 +109,7 @@ cmd_exec(const char *line)
 
 	argc = sscanf(line, "%s %s[^\n]", peer_id, command);
 	if (argc < 2) {
-		chat_writeln(TRUE, "Usage: exec <id> </path/to/command>");
+		chat_writeln(TRUE, LOG_ERR, "Usage: exec <id> </path/to/command>");
 		return;
 	}
 
@@ -168,7 +168,7 @@ cmd_leave()
 		close(peer_info->sockfd_tcp_in);
 
 		snprintf(buffer, BUFFSIZE, "Leaving %s", peer_info->id);
-		chat_writeln(TRUE, buffer);
+		chat_writeln(TRUE, LOG_INFO, buffer);
 
 		curpeer = curpeer->next;
 	}

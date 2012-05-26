@@ -19,6 +19,18 @@
 
 #include "chatgui.h"
 
+char *prionames[] =
+  {
+    "EMERG",
+    "ALERT",
+    "CRIT",
+    "ERR",
+    "WARN",
+    "NOTICE",
+    "INFO",
+    "DEBUG"
+  };
+
 void
 chat_repaint()
 {
@@ -30,13 +42,20 @@ chat_repaint()
 }
 
 void
-chat_writeln(int notice, const char *line)
+chat_writeln(int prefix, int priority, const char *line)
 {
+	int color_pair;
 	pthread_mutex_lock(&chatw_mutex);
-	if (notice) {
+
+	if (priority > LOG_WARNING)
+		color_pair = COLOR_PAIR(1);
+	else
+		color_pair = COLOR_PAIR(4);
+
+	if (prefix) {
 		waddch(chat_window, '[');
-		wattron(chat_window, COLOR_PAIR(1));
-		waddstr(chat_window, "LOG");
+		wattron(chat_window, color_pair);
+		waddstr(chat_window, prionames[priority]);
 		wattrset(chat_window, A_NORMAL);
 		waddch(chat_window, ']');
 		waddch(chat_window, ' ');

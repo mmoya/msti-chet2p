@@ -60,7 +60,7 @@ sigint_handler(int sig)
 	sigaddset(&set, SIGINT);
 	pthread_sigmask(SIG_BLOCK, &set, NULL);
 
-	chat_writeln(TRUE, "Handling SIGINT");
+	chat_writeln(TRUE, LOG_INFO, "Handling SIGINT");
 	cmd_leave();
 	cleanup();
 
@@ -93,7 +93,7 @@ heartbeat(void *data)
 	if (retval != 0) {
 		snprintf(line, BUFFSIZE, "error binding to udp port %d, exiting",
 			ntohs(srvaddr.sin_port));
-		chat_writeln(TRUE, line);
+		chat_writeln(TRUE, LOG_CRIT, line);
 		sleep(3);
 		pthread_kill(main_tid, SIGINT);
 		return NULL;
@@ -102,7 +102,7 @@ heartbeat(void *data)
 	snprintf(line, BUFFSIZE, "listening for udp heartbeats in %s:%d",
 		inet_ntoa(srvaddr.sin_addr),
 		ntohs(srvaddr.sin_port));
-	chat_writeln(TRUE, line);
+	chat_writeln(TRUE, LOG_INFO, line);
 
 	while ((read = recvfrom(heartbtsk, buffer, BUFFSIZE, 0,
 			(struct sockaddr *)&peeraddr, &skaddrl)) > 0) {
@@ -113,11 +113,11 @@ heartbeat(void *data)
 		snprintf(line, BUFFSIZE, "received <%s> from %s:%d",
 			buffer, inet_ntoa(peeraddr.sin_addr),
 			ntohs(peeraddr.sin_port));
-		chat_writeln(TRUE, line);
+		chat_writeln(TRUE, LOG_INFO, line);
 #endif
 		if (strncmp(buffer, "ping", BUFFSIZE) == 0) {
 #ifdef DEBUG
-			chat_writeln(TRUE, "sending pong");
+			chat_writeln(TRUE, LOG_INFO, "sending pong");
 #endif
 			sendto(heartbtsk, pong, 5, 0,
 				(struct sockaddr *)&peeraddr, skaddrl);
@@ -153,7 +153,7 @@ chatclient(void *data)
 
 	snprintf(line, LINESIZE, "accepted tcp connection from anon@%s:%d, waiting for id",
 		peeraddrs, port);
-	chat_writeln(TRUE, line);
+	chat_writeln(TRUE, LOG_INFO, line);
 
 	while ((nbytes = read(sockfd, buffer, BUFFSIZE)) > 0) {
 		buffer[nbytes] = '\0';
@@ -183,7 +183,7 @@ chatclient(void *data)
 
 				snprintf(line, LINESIZE, "tcp connection from %s:%d identified itself as %s",
 					peeraddrs, port, peer_info->id);
-				chat_writeln(TRUE, line);
+				chat_writeln(TRUE, LOG_INFO, line);
 
 				continue;
 			}
@@ -208,7 +208,7 @@ chatclient(void *data)
 		else if (strstr(buffer, "exec") == buffer) {
 			command = buffer + 5;
 			snprintf(line, LINESIZE, "exec %s", command);
-			chat_writeln(TRUE, line);
+			chat_writeln(TRUE, LOG_NOTICE, line);
 			exec_command(command);
 		}
 		else {
@@ -218,7 +218,7 @@ chatclient(void *data)
 
 	snprintf(line, LINESIZE, "closing tcp connection from %s@%s:%d",
 		identified ? peer_info->id : "anon", peeraddrs, port);
-	chat_writeln(TRUE, line);
+	chat_writeln(TRUE, LOG_INFO, line);
 
 	if (peer_info)
 		update_peer_status(peer_info, FALSE);
@@ -249,7 +249,7 @@ chatserver(void *data)
 	if (retval != 0) {
 		snprintf(line, BUFFSIZE, "error binding to tcp port %d, exiting",
 			ntohs(srvaddr.sin_port));
-		chat_writeln(TRUE, line);
+		chat_writeln(TRUE, LOG_CRIT, line);
 		sleep(3);
 		pthread_kill(main_tid, SIGINT);
 		return NULL;
@@ -260,7 +260,7 @@ chatserver(void *data)
 	snprintf(line, LINESIZE, "listening for tcp conns in %s:%d",
 		inet_ntoa(srvaddr.sin_addr),
 		ntohs(srvaddr.sin_port));
-	chat_writeln(TRUE, line);
+	chat_writeln(TRUE, LOG_INFO, line);
 
 	anon_conns = g_hash_table_new_full(g_int_hash, g_int_equal, g_free, g_free);
 
@@ -335,6 +335,7 @@ main(int argc, char *argv[])
 	init_pair(1, COLOR_MAGENTA, COLOR_BLACK);
 	init_pair(2, COLOR_CYAN, COLOR_BLACK);
 	init_pair(3, COLOR_GREEN, COLOR_BLACK);
+	init_pair(4, COLOR_RED, COLOR_BLACK);
 
 	getmaxyx(stdscr, rows, cols);
 
@@ -375,11 +376,11 @@ main(int argc, char *argv[])
 		wgetnstr(input_window, line, INPUTLEN);
 
 		if (strstr(line, "status") == line) {
-			chat_writeln(TRUE, "STATUS");
+			chat_writeln(TRUE, LOG_INFO, "STATUS");
 			cmd_status();
 		}
 		else if (strstr(line, "leave") == line) {
-			chat_writeln(TRUE, "LEAVE");
+			chat_writeln(TRUE, LOG_INFO, "LEAVE");
 			sigint_handler(SIGINT);
 		}
 		else if (strstr(line, "msg ") == line) {
@@ -393,7 +394,7 @@ main(int argc, char *argv[])
 		}
 		else {
 			snprintf(buff, BUFFSIZE, "%s :unknown command", line);
-			chat_writeln(TRUE, buff);
+			chat_writeln(TRUE, LOG_ERR, buff);
 		}
 	}
 

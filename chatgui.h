@@ -22,6 +22,7 @@
 
 #include <ncurses.h>
 #include <pthread.h>
+#include <syslog.h>
 
 typedef enum {
 	MSGDIR_IN,
@@ -35,7 +36,7 @@ void
 chat_repaint();
 
 void
-chat_writeln(int notice, const char *line);
+chat_writeln(int prefix, int priority, const char *line);
 
 void
 chat_message(const msgdir_t msgdir, const char *peer_id, const char *message);
