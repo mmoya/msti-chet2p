@@ -48,7 +48,4 @@ extern pthread_t chatserver_tid;
 extern int should_finish;
 extern peer_info_t *self_info;
 
-const static char *ping = "ping\n";
-const static char *leave = "leave\n";
-
 #endif /* _CHET2P_H */

@@ -28,6 +28,8 @@
 #include "commands.h"
 #include "peers.h"
 
+const static char *ping = "ping\n";
+
 void
 exec_command(const char *command)
 {

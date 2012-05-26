@@ -25,6 +25,8 @@
 #include "chatgui.h"
 #include "chet2p.h"
 
+const static char *leave = "leave\n";
+
 void
 cmd_status()
 {
