@@ -424,7 +424,7 @@ main(int argc, char *argv[])
 		}
 		else if (strstr(line, "leave") == line) {
 			chat_writeln(TRUE, LOG_INFO, "LEAVE");
-			sigint_handler(SIGINT);
+			break;
 		}
 		else if (strstr(line, "msg ") == line) {
 			cmd_message(line + 4);
@@ -440,6 +440,8 @@ main(int argc, char *argv[])
 			chat_writeln(TRUE, LOG_ERR, buff);
 		}
 	}
+
+	sigint_handler(SIGINT);
 
 	exit(EXIT_SUCCESS);
 }
