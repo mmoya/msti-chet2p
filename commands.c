@@ -61,6 +61,12 @@ _cmd_message(const char *peer_id, const char *message)
 		return;
 	}
 
+	if (!peer_info->alive)
+		snprintf(buff, BUFFSIZE, "%s :not alive", peer_id);
+		chat_writeln(TRUE, buff);
+		return;
+	}
+
 	sockfd = peer_info->sockfd_tcp;
 	writec = write(sockfd, message, strlen(message));
 	if (writec == strlen(message)) {
