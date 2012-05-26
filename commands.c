@@ -47,35 +47,41 @@ cmd_status()
 }
 
 void
-_cmd_message(const char *peer_id, const char *message)
+send_message(const peer_info_t *peer_info, const char *message)
 {
-	int sockfd;
 	ssize_t writec;
 	char buff[BUFFSIZE];
-	peer_info_t *peer_info = NULL;
 
-	peer_info = g_hash_table_lookup(peers_by_id, peer_id);
-	if (peer_info == NULL) {
-		snprintf(buff, BUFFSIZE, "%s :unknown id", peer_id);
+	if (!peer_info->alive) {
+		snprintf(buff, BUFFSIZE, "%s :not alive", peer_info->id);
 		chat_writeln(TRUE, buff);
 		return;
 	}
 
-	if (!peer_info->alive)
-		snprintf(buff, BUFFSIZE, "%s :not alive", peer_id);
-		chat_writeln(TRUE, buff);
-		return;
-	}
-
-	sockfd = peer_info->sockfd_tcp;
-	writec = write(sockfd, message, strlen(message));
+	writec = write(peer_info->sockfd_tcp, message, strlen(message));
 	if (writec == strlen(message)) {
-		chat_message(MSGDIR_OUT, &peer_id[0], &message[0]);
+		chat_message(MSGDIR_OUT, &peer_info->id[0], &message[0]);
 	}
 	else {
 		snprintf(buff, BUFFSIZE, "error sending message: %d bytes sent", (int)writec);
 		chat_writeln(TRUE, buff);
 	}
+}
+
+void
+_cmd_message(const char *peer_id, const char *message)
+{
+	char line[LINESIZE];
+	peer_info_t *peer_info = NULL;
+
+	peer_info = g_hash_table_lookup(peers_by_id, peer_id);
+	if (peer_info == NULL) {
+		snprintf(line, LINESIZE, "%s :unknown id", peer_id);
+		chat_writeln(TRUE, line);
+		return;
+	}
+
+	send_message(peer_info, message);
 }
 
 void
