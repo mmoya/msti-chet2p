@@ -25,8 +25,6 @@
 #include "chatgui.h"
 #include "chet2p.h"
 
-const static char *leave = "leave\n";
-
 void
 cmd_status()
 {
@@ -131,49 +129,4 @@ cmd_broadcast(const char *message) {
 			send_message(peer_info, message);
 		curpeer = curpeer->next;
 	}
-}
-
-void
-cmd_leave()
-{
-	GList *peers, *curpeer;
-	peer_info_t *peer_info;
-	struct sockaddr_in peeraddr;
-	char buffer[BUFFSIZE];
-
-	peers = g_hash_table_get_values(peers_by_id);
-
-	curpeer = peers;
-	while (curpeer) {
-		peer_info = curpeer->data;
-		pthread_cancel(peer_info->poller_tid);
-		pthread_join(peer_info->poller_tid, NULL);
-
-		pthread_cancel(peer_info->connect_tid);
-		pthread_join(peer_info->connect_tid, NULL);
-
-		pthread_cancel(peer_info->client_tid);
-		pthread_join(peer_info->client_tid, NULL);
-
-		peeraddr.sin_family = AF_INET;
-		peeraddr.sin_addr.s_addr = peer_info->in_addr;
-		peeraddr.sin_port = peer_info->udp_port;
-
-		sendto(peer_info->sockfd_udp, leave, strlen(leave), 0,
-			(struct sockaddr *)&peeraddr,
-			 sizeof(struct sockaddr_in));
-		close(peer_info->sockfd_udp);
-
-		close(peer_info->sockfd_tcp);
-		close(peer_info->sockfd_tcp_in);
-
-		snprintf(buffer, BUFFSIZE, "Leaving %s", peer_info->id);
-		chat_writeln(TRUE, LOG_INFO, buffer);
-
-		curpeer = curpeer->next;
-	}
-
-	pthread_cancel(heartbeat_tid);
-	pthread_cancel(chatserver_tid);
-	should_finish = TRUE;
 }
