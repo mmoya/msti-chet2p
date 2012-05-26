@@ -44,7 +44,7 @@ pthread_t heartbeat_tid;
 pthread_t chatserver_tid;
 int should_finish = FALSE;
 
-int listensk;
+int chatsrvsk;
 
 void
 cleanup();
@@ -226,15 +226,15 @@ chatserver(void *data)
 	int *pconnsk;
 	pthread_t *client_tid;
 
-	listensk = socket(PF_INET, SOCK_STREAM, 0);
-	setsockopt(listensk, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+	chatsrvsk = socket(PF_INET, SOCK_STREAM, 0);
+	setsockopt(chatsrvsk, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 
 	srvaddr.sin_family = AF_INET;
 	srvaddr.sin_addr.s_addr = self_info->in_addr;
 	srvaddr.sin_port = self_info->tcp_port;
 
-	bind(listensk, (struct sockaddr *)&srvaddr, sizeof(srvaddr));
-	listen(listensk, 4);
+	bind(chatsrvsk, (struct sockaddr *)&srvaddr, sizeof(srvaddr));
+	listen(chatsrvsk, 4);
 
 	snprintf(line, LINESIZE, "listening for tcp conns in %s:%d",
 		inet_ntoa(srvaddr.sin_addr),
@@ -244,7 +244,7 @@ chatserver(void *data)
 	anon_conns = g_hash_table_new_full(g_int_hash, g_int_equal, g_free, g_free);
 
 	while (!should_finish) {
-		connsk = accept(listensk, NULL, NULL);
+		connsk = accept(chatsrvsk, NULL, NULL);
 
 		client_tid = (pthread_t *)g_malloc(sizeof(pthread_t));
 		pconnsk = (int *)g_malloc(sizeof(int));
@@ -260,7 +260,7 @@ chatserver(void *data)
 void
 cleanup()
 {
-	close(listensk);
+	close(chatsrvsk);
 	pthread_join(heartbeat_tid, NULL);
 	pthread_join(chatserver_tid, NULL);
 	endwin();
