@@ -76,6 +76,7 @@ heartbeat(void *data)
 	size_t read;
 	char *pong = "pong\n";
 	char line[BUFFSIZE];
+	int retval;
 
 	memset(&srvaddr, 0, sizeof(srvaddr));
 	memset(&peeraddr, 0, sizeof(peeraddr));
@@ -88,7 +89,15 @@ heartbeat(void *data)
 
 	skaddrl = sizeof(peeraddr);
 
-	bind(heartbtsk, (struct sockaddr *)&srvaddr, sizeof(srvaddr));
+	retval = bind(heartbtsk, (struct sockaddr *)&srvaddr, sizeof(srvaddr));
+	if (retval != 0) {
+		snprintf(line, BUFFSIZE, "error binding to udp port %d, exiting",
+			ntohs(srvaddr.sin_port));
+		chat_writeln(TRUE, line);
+		sleep(3);
+		pthread_kill(main_tid, SIGINT);
+		return NULL;
+	}
 
 	snprintf(line, BUFFSIZE, "listening for udp heartbeats in %s:%d",
 		inet_ntoa(srvaddr.sin_addr),
@@ -227,6 +236,7 @@ chatserver(void *data)
 	char line[LINESIZE];
 	int *pconnsk;
 	pthread_t *client_tid;
+	int retval;
 
 	chatsrvsk = socket(PF_INET, SOCK_STREAM, 0);
 	setsockopt(chatsrvsk, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
@@ -235,7 +245,16 @@ chatserver(void *data)
 	srvaddr.sin_addr.s_addr = self_info->in_addr;
 	srvaddr.sin_port = self_info->tcp_port;
 
-	bind(chatsrvsk, (struct sockaddr *)&srvaddr, sizeof(srvaddr));
+	retval = bind(chatsrvsk, (struct sockaddr *)&srvaddr, sizeof(srvaddr));
+	if (retval != 0) {
+		snprintf(line, BUFFSIZE, "error binding to tcp port %d, exiting",
+			ntohs(srvaddr.sin_port));
+		chat_writeln(TRUE, line);
+		sleep(3);
+		pthread_kill(main_tid, SIGINT);
+		return NULL;
+	}
+
 	listen(chatsrvsk, 4);
 
 	snprintf(line, LINESIZE, "listening for tcp conns in %s:%d",
