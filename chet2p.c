@@ -45,6 +45,7 @@ pthread_t chatserver_tid;
 int should_finish = FALSE;
 
 int chatsrvsk;
+int heartbtsk;
 
 void
 cleanup();
@@ -68,7 +69,6 @@ sigint_handler(int sig)
 void *
 heartbeat(void *data)
 {
-	int sk;
 	struct sockaddr_in srvaddr, peeraddr;
 	char buffer[BUFFSIZE];
 	socklen_t skaddrl;
@@ -79,7 +79,7 @@ heartbeat(void *data)
 	memset(&srvaddr, 0, sizeof(srvaddr));
 	memset(&peeraddr, 0, sizeof(peeraddr));
 
-	sk = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	heartbtsk = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
 	srvaddr.sin_family = AF_INET;
 	srvaddr.sin_addr.s_addr = self_info->in_addr;
@@ -87,14 +87,14 @@ heartbeat(void *data)
 
 	skaddrl = sizeof(peeraddr);
 
-	bind(sk, (struct sockaddr *)&srvaddr, sizeof(srvaddr));
+	bind(heartbtsk, (struct sockaddr *)&srvaddr, sizeof(srvaddr));
 
 	snprintf(line, BUFFSIZE, "listening for udp heartbeats in %s:%d",
 		inet_ntoa(srvaddr.sin_addr),
 		ntohs(srvaddr.sin_port));
 	chat_writeln(TRUE, line);
 
-	while ((read = recvfrom(sk, buffer, BUFFSIZE, 0,
+	while ((read = recvfrom(heartbtsk, buffer, BUFFSIZE, 0,
 			(struct sockaddr *)&peeraddr, &skaddrl)) > 0) {
 
 		if (buffer[read - 1] == '\n')
@@ -109,7 +109,7 @@ heartbeat(void *data)
 #ifdef DEBUG
 			chat_writeln(TRUE, "sending pong");
 #endif
-			sendto(sk, pong, 5, 0,
+			sendto(heartbtsk, pong, 5, 0,
 				(struct sockaddr *)&peeraddr, skaddrl);
 		}
 	}
