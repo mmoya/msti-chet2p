@@ -97,14 +97,16 @@ heartbeat(void *data)
 
 		if (buffer[read - 1] == '\n')
 			buffer[read - 1] = '\0';
-
+#ifdef DEBUG
 		snprintf(line, BUFFSIZE, "Received <%s> from %s:%d",
 			buffer, inet_ntoa(peeraddr.sin_addr),
 			ntohs(peeraddr.sin_port));
 		chat_writeln(TRUE, line);
-
+#endif
 		if (strncmp(buffer, "ping", BUFFSIZE) == 0) {
+#ifdef DEBUG
 			chat_writeln(TRUE, "Sending pong");
+#endif
 			sendto(sk, pong, 5, 0,
 				(struct sockaddr *)&peeraddr, skaddrl);
 		}

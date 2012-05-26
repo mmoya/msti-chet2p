@@ -2,6 +2,10 @@ CC = gcc
 CFLAGS = -Wall -ggdb $(shell pkg-config --cflags glib-2.0)
 LDFLAGS = -lncurses -lpthread $(shell pkg-config --libs glib-2.0)
 
+ifeq ($D, 1)
+	CFLAGS += -DDEBUG
+endif
+
 chet2p: chet2p.o commands.o chatgui.o peers.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
