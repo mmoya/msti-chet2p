@@ -45,7 +45,6 @@ typedef struct {
 extern GHashTable *peers_by_id;
 extern pthread_t heartbeat_tid;
 extern pthread_t chatserver_tid;
-extern int should_finish;
 extern peer_info_t *self_info;
 
 #endif /* _CHET2P_H */

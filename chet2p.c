@@ -43,7 +43,6 @@ GHashTable *anon_conns;
 pthread_t main_tid;
 pthread_t heartbeat_tid;
 pthread_t chatserver_tid;
-int should_finish = FALSE;
 
 int chatsrvsk;
 int heartbtsk;
@@ -62,7 +61,6 @@ sigint_handler(int sig)
 	sigaddset(&set, SIGINT);
 	pthread_sigmask(SIG_BLOCK, &set, NULL);
 
-	should_finish = TRUE;
 	chat_writeln(TRUE, LOG_INFO, "Handling SIGINT");
 	cleanup();
 
@@ -267,7 +265,7 @@ chatserver(void *data)
 
 	anon_conns = g_hash_table_new_full(g_int_hash, g_int_equal, g_free, g_free);
 
-	while (!should_finish) {
+	while (TRUE) {
 		connsk = accept(chatsrvsk, NULL, NULL);
 
 		client_tid = (pthread_t *)g_malloc(sizeof(pthread_t));
@@ -411,7 +409,8 @@ main(int argc, char *argv[])
 	pthread_sigmask(SIG_UNBLOCK, &set, NULL);
 	signal(SIGINT, sigint_handler);
 
-	while (!should_finish) {
+	while(TRUE) {
+
 		werase(input_window);
 		wborder(input_window, ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
 				      ACS_LTEE, ACS_RTEE, ACS_LLCORNER, ACS_LRCORNER);
