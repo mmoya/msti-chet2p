@@ -133,11 +133,6 @@ chatclient(void *data)
 	int sockfd = *(int *)data;
 
 	peer_info_t *peer_info;
-	struct sockaddr_storage peeraddr_stor;
-	socklen_t peeraddr_storl = sizeof(peeraddr_stor);
-	struct sockaddr_in *peeraddr;
-	char peeraddrs[INET_ADDRSTRLEN];
-	int port;
 	char line[LINESIZE];
 	char buffer[BUFFSIZE];
 	int nbytes;
@@ -146,6 +141,13 @@ chatclient(void *data)
 	char *id;
 	int identified = 0;
 
+#ifdef DEBUG
+	struct sockaddr_storage peeraddr_stor;
+	socklen_t peeraddr_storl = sizeof(peeraddr_stor);
+	struct sockaddr_in *peeraddr;
+	char peeraddrs[INET_ADDRSTRLEN];
+	int port;
+
 	getpeername(sockfd, (struct sockaddr *)&peeraddr_stor, &peeraddr_storl);
 	peeraddr = (struct sockaddr_in *)&peeraddr_stor;
 	inet_ntop(AF_INET, &peeraddr->sin_addr, peeraddrs, sizeof(peeraddrs));
@@ -153,8 +155,8 @@ chatclient(void *data)
 
 	snprintf(line, LINESIZE, "accepted tcp connection from anon@%s:%d, waiting for id",
 		peeraddrs, port);
-	chat_writeln(TRUE, LOG_INFO, line);
-
+	chat_writeln(TRUE, LOG_DEBUG, line);
+#endif
 	while ((nbytes = read(sockfd, buffer, BUFFSIZE)) > 0) {
 		buffer[nbytes] = '\0';
 
@@ -180,11 +182,11 @@ chatclient(void *data)
 				peer_info->sockfd_tcp_in = sockfd;
 				peer_info->client_tid = pthread_self();
 				update_peer_status(peer_info, TRUE);
-
+#ifdef DEBUG
 				snprintf(line, LINESIZE, "tcp connection from %s:%d identified itself as %s",
 					peeraddrs, port, peer_info->id);
-				chat_writeln(TRUE, LOG_INFO, line);
-
+				chat_writeln(TRUE, LOG_DEBUG, line);
+#endif
 				continue;
 			}
 			else {
@@ -215,11 +217,11 @@ chatclient(void *data)
 			chat_message(MSGDIR_IN, peer_info->id, buffer);
 		}
 	}
-
+#ifdef DEBUG
 	snprintf(line, LINESIZE, "closing tcp connection from %s@%s:%d",
 		identified ? peer_info->id : "anon", peeraddrs, port);
-	chat_writeln(TRUE, LOG_INFO, line);
-
+	chat_writeln(TRUE, LOG_DEBUG, line);
+#endif
 	if (peer_info)
 		update_peer_status(peer_info, FALSE);
 	g_hash_table_remove(anon_conns, data);

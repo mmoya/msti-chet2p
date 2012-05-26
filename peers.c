@@ -67,13 +67,13 @@ peer_connect(void *data)
 		chat_writeln(TRUE, LOG_ERR, buffer);
 		return NULL;
 	}
-
+#ifdef DEBUG
 	snprintf(buffer, BUFFSIZE, "connected to peer %s@%s:%d, sending id",
 		peer_info->id,
 		inet_ntoa(peeraddr.sin_addr),
 		htons(peeraddr.sin_port));
-	chat_writeln(TRUE, LOG_INFO, buffer);
-
+	chat_writeln(TRUE, LOG_DEBUG, buffer);
+#endif
 	peer_info->sockfd_tcp = sockfd;
 
 	snprintf(buffer, BUFFSIZE, "id %s\n", self_info->id);
@@ -176,13 +176,13 @@ peer_poller(void *data)
 	peeraddr.sin_port = peer_info->udp_port;
 
 	addrlen = sizeof(struct sockaddr_in);
-
+#ifdef DEBUG
 	snprintf(buffer, BUFFSIZE, "started polling thread for %s@%s:%d",
 		peer_info->id,
 		inet_ntoa(peeraddr.sin_addr),
 		ntohs(peeraddr.sin_port));
-	chat_writeln(TRUE, LOG_INFO, buffer);
-
+	chat_writeln(TRUE, LOG_DEBUG, buffer);
+#endif
 	while (TRUE) {
 		sendto(peer_info->sockfd_udp, ping, strlen(ping), 0,
 			(struct sockaddr *)&peeraddr,
