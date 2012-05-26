@@ -300,6 +300,10 @@ main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	if (isatty(STDIN_FILENO) || isatty(STDOUT_FILENO) || isatty(STDERR_FILENO)) {
+		printf("\033c\033(K\033[J\033[0m\033[?25h");
+	}
+
 	initscr();
 	start_color();
 
