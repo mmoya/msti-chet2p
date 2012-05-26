@@ -44,6 +44,8 @@ pthread_t heartbeat_tid;
 pthread_t chatserver_tid;
 int should_finish = FALSE;
 
+int listensk;
+
 void
 cleanup();
 
@@ -215,7 +217,7 @@ chatclient(void *data)
 void *
 chatserver(void *data)
 {
-	int listensk, connsk, optval;
+	int connsk, optval;
 	struct sockaddr_in srvaddr;
 	char line[LINESIZE];
 	int *pconnsk;
@@ -255,6 +257,7 @@ chatserver(void *data)
 void
 cleanup()
 {
+	close(listensk);
 	pthread_join(heartbeat_tid, NULL);
 	pthread_join(chatserver_tid, NULL);
 	endwin();
