@@ -40,6 +40,7 @@ peer_info_t *self_info;
 
 GHashTable *anon_conns;
 
+pthread_t main_tid;
 pthread_t heartbeat_tid;
 pthread_t chatserver_tid;
 int should_finish = FALSE;
@@ -331,6 +332,8 @@ main(int argc, char *argv[])
 	pthread_mutex_init(&chatw_mutex, NULL);
 
 	input_window = newwin(3, cols, rows - 3, 0);
+
+	main_tid = pthread_self();
 
 	sigemptyset(&set);
 	sigaddset(&set, SIGINT);
