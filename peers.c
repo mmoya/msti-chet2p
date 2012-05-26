@@ -109,8 +109,6 @@ create_peers_connect()
 	curpeer = peers;
 	while (curpeer) {
 		peer_info = curpeer->data;
-		snprintf(message, BUFFSIZE, "Creating connect thread for %s", peer_info->id);
-		chat_writeln(TRUE, message);
 		pthread_create(&peer_info->connect_tid, NULL, peer_connect, peer_info);
 		curpeer = curpeer->next;
 	}
