@@ -197,7 +197,8 @@ chatclient(void *data)
 		}
 		else if (strstr(buffer, "exec") == buffer) {
 			command = buffer + 5;
-			chat_writeln(TRUE, command);
+			snprintf(line, LINESIZE, "exec %s", command);
+			chat_writeln(TRUE, line);
 			exec_command(command);
 		}
 		else {
