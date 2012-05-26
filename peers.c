@@ -101,19 +101,48 @@ peer_connect(void *data)
 }
 
 void
-create_peers_connect()
-{
-	GList *peers, *curpeer;
-	peer_info_t *peer_info;
-	char message[BUFFSIZE];
+update_peer_status(peer_info_t *peer_info, int status) {
+	char line[LINESIZE];
 
-	peers = g_hash_table_get_values(peers_by_id);
+	int prev_status = peer_info->alive;
+	peer_info->alive = status;
 
-	curpeer = peers;
-	while (curpeer) {
-		peer_info = curpeer->data;
-		pthread_create(&peer_info->connect_tid, NULL, peer_connect, peer_info);
-		curpeer = curpeer->next;
+	if (prev_status != status) {
+		snprintf(line, LINESIZE, "%s changed status to %s", peer_info->id,
+			 status ? "alive" : "dead");
+		chat_writeln(TRUE, line);
+	}
+
+	if (peer_info->alive) {
+		if (!peer_info->connect_tid || pthread_kill(peer_info->connect_tid, 0) != 0) {
+			pthread_create(&peer_info->connect_tid, NULL, peer_connect, peer_info);
+#ifdef DEBUG
+			snprintf(line, LINESIZE, "started connect thread %lu for client %s",
+				peer_info->connect_tid, peer_info->id);
+			chat_writeln(TRUE, line);
+#endif
+		}
+	}
+	else {
+		if (peer_info->connect_tid && pthread_kill(peer_info->connect_tid, 0) == 0) {
+#ifdef DEBUG
+			snprintf(line, LINESIZE, "terminating connect thread %lu for client %s",
+				peer_info->connect_tid, peer_info->id);
+			chat_writeln(TRUE, line);
+#endif
+			pthread_cancel(peer_info->connect_tid);
+			close(peer_info->sockfd_tcp);
+		}
+
+		if (peer_info->client_tid && pthread_kill(peer_info->client_tid, 0) == 0) {
+#ifdef DEBUG
+			snprintf(line, LINESIZE, "terminating client thread %lu for client %s",
+				peer_info->client_tid, peer_info->id);
+			chat_writeln(TRUE, line);
+#endif
+			pthread_cancel(peer_info->client_tid);
+			close(peer_info->sockfd_tcp_in);
+		}
 	}
 }
 
@@ -161,10 +190,10 @@ peer_poller(void *data)
 		recv_at = time(NULL);
 
 		if (readb > 0 && strstr(buffer, "pong") == buffer) {
-			peer_info->alive = TRUE;
+			update_peer_status(peer_info, TRUE);
 		}
 		else {
-			peer_info->alive = FALSE;
+			update_peer_status(peer_info, FALSE);
 		}
 
 		waitsec = 5 - (recv_at - sent_at);

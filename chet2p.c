@@ -328,7 +328,6 @@ main(int argc, char *argv[])
 	pthread_create(&chatserver_tid, NULL, chatserver, NULL);
 
 	create_peers_poller();
-	create_peers_connect();
 
 	pthread_sigmask(SIG_UNBLOCK, &set, NULL);
 	signal(SIGINT, sigint_handler);
