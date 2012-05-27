@@ -17,6 +17,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <arpa/inet.h>
 #include <errno.h>
 #include <netinet/in.h>
 #include <stdlib.h>
@@ -33,14 +34,11 @@
 #include "chet2p.h"
 #include "peers.h"
 
-GHashTable *peers_by_id;
-peer_info_t *self_info;
-
 GHashTable *anon_conns;
 
-pthread_t main_tid;
 pthread_t heartbeat_tid;
 pthread_t chatserver_tid;
+pthread_t main_tid;
 
 int chatsrvsk;
 int heartbtsk;

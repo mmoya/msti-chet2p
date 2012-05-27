@@ -20,31 +20,8 @@
 #ifndef _CHET2P_H
 #define _CHET2P_H
 
-#include <arpa/inet.h>
-#include <glib.h>
-#include <pthread.h>
-
 #define INPUTLEN 80
 #define BUFFSIZE 255
 #define LINESIZE 255
-
-typedef struct {
-	char *id;
-	in_addr_t in_addr;
-	uint16_t udp_port;
-	uint16_t tcp_port;
-	int sockfd_tcp;
-	int sockfd_tcp_in;
-	int sockfd_udp;
-	int alive;
-	pthread_t poller_tid;
-	pthread_t connect_tid;
-	pthread_t client_tid;
-} peer_info_t;
-
-extern GHashTable *peers_by_id;
-extern pthread_t heartbeat_tid;
-extern pthread_t chatserver_tid;
-extern peer_info_t *self_info;
 
 #endif /* _CHET2P_H */

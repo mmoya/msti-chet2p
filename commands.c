@@ -24,6 +24,7 @@
 
 #include "chatgui.h"
 #include "chet2p.h"
+#include "peers.h"
 
 void
 cmd_status()
