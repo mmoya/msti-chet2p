@@ -33,8 +33,6 @@
 #include "chet2p.h"
 #include "peers.h"
 
-int chat_height, chat_width;
-
 GHashTable *peers_by_id;
 peer_info_t *self_info;
 
@@ -333,7 +331,6 @@ cleanup()
 int
 main(int argc, char *argv[])
 {
-	int rows, cols;
 	char line[INPUTLEN];
 	char buff[BUFFSIZE];
 
@@ -367,33 +364,7 @@ main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	if (isatty(STDIN_FILENO) || isatty(STDOUT_FILENO) || isatty(STDERR_FILENO)) {
-		printf("\033c\033(K\033[J\033[0m\033[?25h");
-	}
-
-	initscr();
-	start_color();
-
-	init_pair(1, COLOR_MAGENTA, COLOR_BLACK);
-	init_pair(2, COLOR_CYAN, COLOR_BLACK);
-	init_pair(3, COLOR_GREEN, COLOR_BLACK);
-	init_pair(4, COLOR_RED, COLOR_BLACK);
-
-	getmaxyx(stdscr, rows, cols);
-
-	chat_height = rows - 2;
-	chat_width = cols;
-
-	chat_window = newwin(chat_height, chat_width, 0, 0);
-	box(chat_window, 0, 0);
-	idlok(chat_window, TRUE);
-	scrollok(chat_window, TRUE);
-	wsetscrreg(chat_window, 1, chat_height - 1);
-	wmove(chat_window, chat_height - 1, 1);
-	wrefresh(chat_window);
-	pthread_mutex_init(&chatw_mutex, NULL);
-
-	input_window = newwin(3, cols, rows - 3, 0);
+	init_gui();
 
 	main_tid = pthread_self();
 
@@ -410,12 +381,7 @@ main(int argc, char *argv[])
 	signal(SIGINT, sigint_handler);
 
 	while(TRUE) {
-
 		werase(input_window);
-		wborder(input_window, ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
-				      ACS_LTEE, ACS_RTEE, ACS_LLCORNER, ACS_LRCORNER);
-		mvwprintw(input_window, 1, 1, "> ");
-		wrefresh(input_window);
 		wgetnstr(input_window, line, INPUTLEN);
 
 		if (strstr(line, "status") == line) {

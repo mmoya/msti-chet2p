@@ -33,6 +33,9 @@ pthread_mutex_t chatw_mutex;
 WINDOW *chat_window, *input_window;
 
 void
+init_gui();
+
+void
 chat_repaint();
 
 void
