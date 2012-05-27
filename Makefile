@@ -9,7 +9,7 @@ endif
 chet2p: chet2p.o commands.o chatgui.o peers.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-%.o: %.c
+%.o: %.c %.h
 	$(CC) $(CFLAGS) -c $^
 
 clean:
