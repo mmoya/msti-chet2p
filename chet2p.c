@@ -175,7 +175,6 @@ chatclient(void *data)
 
 				g_hash_table_remove(anon_conns, data);
 
-				close(peer_info->sockfd_tcp_in);
 				peer_info->sockfd_tcp_in = sockfd;
 				peer_info->client_tid = pthread_self();
 				update_peer_status(peer_info, TRUE);
