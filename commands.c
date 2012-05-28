@@ -75,6 +75,11 @@ _cmd_message(const char *peer_id, const char *message)
 	char line[LINESIZE];
 	peer_info_t *peer_info = NULL;
 
+	if (strncmp(self_info->id, peer_id, BUFFSIZE) == 0) {
+		chat_writeln(TRUE, LOG_ERR, "That's myself...");
+		return;
+	}
+
 	peer_info = g_hash_table_lookup(peers_by_id, peer_id);
 	if (peer_info == NULL) {
 		snprintf(line, LINESIZE, "%s :unknown id", peer_id);
