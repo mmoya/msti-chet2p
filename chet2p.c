@@ -34,8 +34,6 @@
 #include "chet2p.h"
 #include "peers.h"
 
-GHashTable *anon_conns;
-
 pthread_t heartbeat_tid;
 pthread_t chatserver_tid;
 pthread_t main_tid;
@@ -127,6 +125,7 @@ void *
 chatclient(void *data)
 {
 	int sockfd = *(int *)data;
+	free(data);
 
 	peer_info_t *peer_info;
 	char line[LINESIZE];
@@ -168,12 +167,10 @@ chatclient(void *data)
 					snprintf(line, LINESIZE, "%s is already connected\n", id);
 					write(sockfd, line, strlen(line));
 					identified = 0;
-					continue;
+					return NULL;
 				}
 
 				identified = 1;
-
-				g_hash_table_remove(anon_conns, data);
 
 				peer_info->sockfd_tcp_in = sockfd;
 				peer_info->client_tid = pthread_self();
@@ -219,7 +216,6 @@ chatclient(void *data)
 #endif
 	if (peer_info)
 		update_peer_status(peer_info, FALSE);
-	g_hash_table_remove(anon_conns, data);
 
 	return NULL;
 }
@@ -231,7 +227,7 @@ chatserver(void *data)
 	struct sockaddr_in srvaddr;
 	char line[LINESIZE];
 	int *pconnsk;
-	pthread_t *client_tid;
+	pthread_t client_tid;
 	int retval;
 
 	chatsrvsk = socket(PF_INET, SOCK_STREAM, 0);
@@ -258,17 +254,13 @@ chatserver(void *data)
 		ntohs(srvaddr.sin_port));
 	chat_writeln(TRUE, LOG_INFO, line);
 
-	anon_conns = g_hash_table_new_full(g_int_hash, g_int_equal, g_free, g_free);
-
 	while (TRUE) {
 		connsk = accept(chatsrvsk, NULL, NULL);
 
-		client_tid = (pthread_t *)g_malloc(sizeof(pthread_t));
-		pconnsk = (int *)g_malloc(sizeof(int));
+		pconnsk = (int *)malloc(sizeof(int));
 		*pconnsk = connsk;
 
-		g_hash_table_insert(anon_conns, pconnsk, client_tid);
-		pthread_create(client_tid, NULL, chatclient, pconnsk);
+		pthread_create(&client_tid, NULL, chatclient, pconnsk);
 	}
 
 	return NULL;
