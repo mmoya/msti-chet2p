@@ -88,16 +88,32 @@ _cmd_message(const char *peer_id, const char *message)
 void
 cmd_message(const char *line)
 {
+	GList *peers, *curpeer;
+	peer_info_t *peer_info;
 	int argc;
 	char peer_id[BUFFSIZE], message[BUFFSIZE];
 
 	argc = sscanf(line, "%s %[^\n]", peer_id, message);
 	if (argc < 2) {
-		chat_writeln(TRUE, LOG_ERR, "Usage: msg <id> <message>");
+		chat_writeln(TRUE, LOG_ERR, "Usage: msg <id | -b> <message>");
 		return;
 	}
 
-	_cmd_message(peer_id, message);
+	if (strstr(&peer_id[0], "-b") == &peer_id[0]) {
+		chat_writeln(TRUE, LOG_INFO, "Broadcasting");
+
+		peers = g_hash_table_get_values(peers_by_id);
+		curpeer = peers;
+
+		while (curpeer) {
+			peer_info = curpeer->data;
+			if (peer_info->alive)
+				send_message(peer_info, message);
+			curpeer = curpeer->next;
+		}
+	}
+	else
+		_cmd_message(peer_id, message);
 }
 
 void
