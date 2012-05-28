@@ -11,3 +11,11 @@ Only for demonstrative purposes, security and error management are
 weak. Not intended for real usage.
 
 Project requirements (in spanish) are in enunciado_pdss.txt file.
+
+
+BUILDING
+--------
+chet2p depends on glib and ncursesw
+
+$ apt-get install libglib2.0-dev libncursesw5-dev
+$ make
