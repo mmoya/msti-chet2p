@@ -19,3 +19,6 @@ chet2p depends on glib and ncursesw
 
 $ apt-get install libglib2.0-dev libncursesw5-dev
 $ make
+
+debugging info is available via
+$ make D=1
