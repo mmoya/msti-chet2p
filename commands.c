@@ -117,9 +117,17 @@ cmd_exec(const char *line)
 }
 
 void
-cmd_broadcast(const char *message) {
+cmd_broadcast(const char *line) {
 	GList *peers, *curpeer;
 	peer_info_t *peer_info;
+	int argc;
+	char message[BUFFSIZE];
+
+	argc = sscanf(line, "%s[^\n]", message);
+	if (argc < 1) {
+		chat_writeln(TRUE, LOG_ERR, "Usage: bcast <message>");
+		return;
+	}
 
 	peers = g_hash_table_get_values(peers_by_id);
 	curpeer = peers;
