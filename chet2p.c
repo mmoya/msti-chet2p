@@ -369,6 +369,9 @@ main(int argc, char *argv[])
 	pthread_sigmask(SIG_UNBLOCK, &set, NULL);
 	signal(SIGINT, sigint_handler);
 
+	usleep(250000);
+	chat_writeln(TRUE, LOG_INFO, "Client ready...");
+
 	while(TRUE) {
 		werase(input_window);
 		wgetnstr(input_window, line, INPUTLEN);
