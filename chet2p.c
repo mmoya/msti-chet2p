@@ -381,7 +381,9 @@ main(int argc, char *argv[])
 			cmd_status();
 		}
 		else if (strstr(line, "leave") == line) {
-			chat_writeln(TRUE, LOG_INFO, "LEAVE");
+			werase(input_window);
+			chat_writeln(TRUE, LOG_INFO, "Leaving...");
+			sleep(1);
 			break;
 		}
 		else if (strstr(line, "msg ") == line) {
